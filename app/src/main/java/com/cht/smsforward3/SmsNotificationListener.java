@@ -1,0 +1,271 @@
+package com.cht.smsforward3;
+
+import android.app.Notification;
+import android.content.Intent;
+import android.os.Bundle;
+import android.service.notification.NotificationListenerService;
+import android.service.notification.StatusBarNotification;
+import android.text.TextUtils;
+import android.util.Log;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * NotificationListenerService to intercept SMS notifications from system SMS apps
+ * This service captures SMS content without requiring traditional SMS permissions
+ */
+public class SmsNotificationListener extends NotificationListenerService {
+    
+    private static final String TAG = "SmsNotificationListener";
+    
+    // Common SMS app package names for Android and Meizu devices
+    private static final String[] SMS_PACKAGES = {
+        "com.android.mms",           // Default Android Messages
+        "com.google.android.apps.messaging", // Google Messages
+        "com.meizu.flyme.mms",       // Meizu SMS app (primary target)
+        "com.meizu.mms",             // Alternative Meizu SMS package
+        "com.samsung.android.messaging", // Samsung Messages
+        "com.android.messaging",     // AOSP Messaging
+        "com.sonyericsson.conversations", // Sony Messages
+        "com.htc.sense.mms"          // HTC Messages
+    };
+    
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Log.d(TAG, "=== SMS NOTIFICATION LISTENER SERVICE CREATED ===");
+        Log.d(TAG, "Service package: " + getPackageName());
+        Log.d(TAG, "Supported SMS packages: " + java.util.Arrays.toString(SMS_PACKAGES));
+    }
+    
+    @Override
+    public void onNotificationPosted(StatusBarNotification sbn) {
+        super.onNotificationPosted(sbn);
+
+        Log.e(TAG, "=== NOTIFICATION POSTED ===");
+        Log.e(TAG, "Package: " + sbn.getPackageName());
+        Log.e(TAG, "ID: " + sbn.getId());
+        Log.e(TAG, "Tag: " + sbn.getTag());
+        Log.e(TAG, "Post time: " + sbn.getPostTime());
+
+        // Check if notification is from an SMS app
+        if (!isSmsNotification(sbn)) {
+            Log.e(TAG, "Not an SMS notification - ignoring package: " + sbn.getPackageName());
+            return;
+        }
+
+        Log.e(TAG, "✅ SMS notification detected from: " + sbn.getPackageName());
+
+        // Additional Android 14 compatibility checks
+        if (!isValidSmsNotification(sbn)) {
+            Log.e(TAG, "Notification filtered out - not a valid SMS notification");
+            return;
+        }
+
+        Log.e(TAG, "✅ Valid SMS notification - extracting content");
+
+        // Extract SMS content from notification
+        String smsContent = extractSmsContent(sbn);
+        if (smsContent != null && !smsContent.isEmpty()) {
+            Log.e(TAG, "✅ SMS content extracted: " + smsContent);
+
+            // Extract sender information
+            String sender = extractSender(sbn);
+
+            // Extract verification codes
+            List<String> verificationCodes = VerificationCodeExtractor.extractVerificationCodes(smsContent);
+            String primaryCode = VerificationCodeExtractor.getPrimaryVerificationCode(smsContent);
+
+            if (!verificationCodes.isEmpty()) {
+                Log.e(TAG, "✅ Verification codes found: " + verificationCodes.toString());
+                Log.e(TAG, "✅ Primary verification code: " + primaryCode);
+            } else {
+                Log.e(TAG, "⚠️ No verification codes found in SMS");
+            }
+
+            // Send SMS content to MainActivity for display
+            Log.e(TAG, "📤 Broadcasting SMS content to MainActivity");
+            broadcastSmsContent(smsContent, sender, verificationCodes, primaryCode, sbn);
+        } else {
+            Log.e(TAG, "❌ No SMS content could be extracted from notification");
+        }
+    }
+    
+    @Override
+    public void onNotificationRemoved(StatusBarNotification sbn) {
+        super.onNotificationRemoved(sbn);
+        // Optional: Handle notification removal if needed
+    }
+    
+    /**
+     * Check if the notification is from an SMS application
+     */
+    private boolean isSmsNotification(StatusBarNotification sbn) {
+        String packageName = sbn.getPackageName();
+
+        for (String smsPackage : SMS_PACKAGES) {
+            if (smsPackage.equals(packageName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Additional validation for Android 14 compatibility
+     * Ensures the notification is actually an SMS and not just from an SMS app
+     */
+    private boolean isValidSmsNotification(StatusBarNotification sbn) {
+        Notification notification = sbn.getNotification();
+
+        if (notification == null) {
+            return false;
+        }
+
+        // Check if notification has the characteristics of an SMS
+        Bundle extras = notification.extras;
+        if (extras == null) {
+            return false;
+        }
+
+        // Look for SMS-specific indicators (handle both String and SpannableString)
+        String title = getStringFromExtras(extras, Notification.EXTRA_TITLE);
+        String text = getStringFromExtras(extras, Notification.EXTRA_TEXT);
+        String bigText = getStringFromExtras(extras, Notification.EXTRA_BIG_TEXT);
+
+        // Must have some text content
+        if (TextUtils.isEmpty(text) && TextUtils.isEmpty(bigText)) {
+            return false;
+        }
+
+        // Filter out non-SMS notifications from SMS apps (like settings, etc.)
+        if (title != null && (
+            title.toLowerCase().contains("settings") ||
+            title.toLowerCase().contains("notification") ||
+            title.toLowerCase().contains("permission")
+        )) {
+            return false;
+        }
+
+        return true;
+    }
+    
+    /**
+     * Extract SMS content from the notification
+     */
+    private String extractSmsContent(StatusBarNotification sbn) {
+        Notification notification = sbn.getNotification();
+
+        if (notification == null) {
+            return null;
+        }
+
+        // Try to get content from notification extras
+        Bundle extras = notification.extras;
+        if (extras != null) {
+            // Try different text fields that might contain SMS content (handle both String and SpannableString)
+            String title = getStringFromExtras(extras, Notification.EXTRA_TITLE);
+            String text = getStringFromExtras(extras, Notification.EXTRA_TEXT);
+            String bigText = getStringFromExtras(extras, Notification.EXTRA_BIG_TEXT);
+            String subText = getStringFromExtras(extras, Notification.EXTRA_SUB_TEXT);
+
+            // Prefer big text if available, otherwise use regular text
+            String content = !TextUtils.isEmpty(bigText) ? bigText : text;
+
+            if (!TextUtils.isEmpty(content)) {
+                Log.d(TAG, "Extracted SMS - Title: " + title + ", Content: " + content);
+                return content.trim();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract sender information from the notification
+     */
+    private String extractSender(StatusBarNotification sbn) {
+        Notification notification = sbn.getNotification();
+
+        if (notification == null) {
+            return "Unknown";
+        }
+
+        Bundle extras = notification.extras;
+        if (extras != null) {
+            // Try to get sender from title or sub text (handle both String and SpannableString)
+            String title = getStringFromExtras(extras, Notification.EXTRA_TITLE);
+            String subText = getStringFromExtras(extras, Notification.EXTRA_SUB_TEXT);
+
+            // Title often contains sender name or phone number
+            if (!TextUtils.isEmpty(title)) {
+                return title.trim();
+            }
+
+            // Fallback to sub text
+            if (!TextUtils.isEmpty(subText)) {
+                return subText.trim();
+            }
+        }
+
+        // Fallback to package name
+        return sbn.getPackageName();
+    }
+    
+    /**
+     * Broadcast SMS content to MainActivity
+     */
+    private void broadcastSmsContent(String content, String sender, List<String> verificationCodes,
+                                   String primaryCode, StatusBarNotification sbn) {
+        // Create intent to broadcast SMS content
+        Intent intent = new Intent("com.cht.smsforward3.SMS_RECEIVED");
+        intent.putExtra("sms_content", content);
+        intent.putExtra("sender", sender);
+        intent.putExtra("package_name", sbn.getPackageName());
+        intent.putExtra("timestamp", sbn.getPostTime());
+
+        // Add verification code information
+        if (!verificationCodes.isEmpty()) {
+            intent.putStringArrayListExtra("verification_codes", new ArrayList<>(verificationCodes));
+            intent.putExtra("primary_verification_code", primaryCode);
+        }
+
+        // Send local broadcast using LocalBroadcastManager
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+        // Also try regular broadcast as fallback
+        sendBroadcast(intent);
+
+        Log.d(TAG, "SMS content broadcasted (local + regular) - Sender: " + sender + ", Content: " + content +
+              ", Verification codes: " + verificationCodes.size());
+    }
+
+    /**
+     * Safely extract string from Bundle extras, handling both String and SpannableString
+     */
+    private String getStringFromExtras(Bundle extras, String key) {
+        try {
+            Object value = extras.get(key);
+            if (value == null) {
+                return null;
+            }
+
+            // Handle both String and CharSequence (including SpannableString)
+            if (value instanceof String) {
+                return (String) value;
+            } else if (value instanceof CharSequence) {
+                return value.toString();
+            } else {
+                Log.d(TAG, "Unexpected type for key " + key + ": " + value.getClass().getSimpleName());
+                return value.toString();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error extracting string for key " + key, e);
+            return null;
+        }
+    }
+}
