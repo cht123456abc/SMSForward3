@@ -17,7 +17,7 @@
 #### Phase 2: Permission Setup
 1. **Tap "Enable Notification Access"** button
 2. **Verify Settings redirect** - should open Android notification access settings
-3. **Enable notification access** for "SMSForward3" app
+3. **Enable notification access** for "SMSForward" app
 4. **Return to app** - status should change to "✓ Notification access enabled"
 
 #### Phase 3: Basic Functionality Test
@@ -157,7 +157,7 @@ The app supports these Meizu SMS package names:
 adb shell settings get secure enabled_notification_listeners
 
 # Send test notification (if needed)
-adb shell am broadcast -a com.cht.smsforward3.SMS_RECEIVED
+adb shell am broadcast -a com.cht.smsforward.SMS_RECEIVED
 
 # Check app logs
 adb logcat | grep -E "(MainActivity|SmsNotificationListener|VerificationCodeExtractor)"

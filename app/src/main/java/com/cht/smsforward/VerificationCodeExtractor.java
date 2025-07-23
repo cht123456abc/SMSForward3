@@ -1,4 +1,4 @@
-package com.cht.smsforward3;
+package com.cht.smsforward;
 
 import android.text.SpannableString;
 import android.text.Spanned;

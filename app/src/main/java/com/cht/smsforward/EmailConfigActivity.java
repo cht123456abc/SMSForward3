@@ -1,4 +1,4 @@
-package com.cht.smsforward3;
+package com.cht.smsforward;
 
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -6,8 +6,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Switch;
+import androidx.appcompat.widget.SwitchCompat;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,8 +17,8 @@ import androidx.appcompat.app.AppCompatActivity;
 public class EmailConfigActivity extends AppCompatActivity {
     private static final String TAG = "EmailConfigActivity";
     
-    private Switch emailEnabledSwitch;
-    private LinearLayout configFormLayout;
+    private SwitchCompat emailEnabledSwitch;
+    private View configFormLayout;
     private EditText senderEmailEditText;
     private EditText senderPasswordEditText;
     private EditText recipientEmailEditText;
@@ -106,7 +105,7 @@ public class EmailConfigActivity extends AppCompatActivity {
         boolean enabled = emailEnabledSwitch.isChecked();
         configFormLayout.setVisibility(enabled ? View.VISIBLE : View.GONE);
         testEmailButton.setVisibility(enabled ? View.VISIBLE : View.GONE);
-        saveConfigButton.setText(enabled ? "Save Configuration" : "Save Settings");
+        saveConfigButton.setText(enabled ? getString(R.string.save_configuration) : getString(R.string.save_settings));
     }
     
     /**

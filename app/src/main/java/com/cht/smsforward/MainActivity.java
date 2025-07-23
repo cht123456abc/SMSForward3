@@ -1,4 +1,4 @@
-package com.cht.smsforward3;
+package com.cht.smsforward;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -30,12 +30,10 @@ import androidx.recyclerview.widget.RecyclerView;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final String SMS_RECEIVED_ACTION = "com.cht.smsforward3.SMS_RECEIVED";
+    private static final String SMS_RECEIVED_ACTION = "com.cht.smsforward.SMS_RECEIVED";
 
     private TextView statusText;
     private Button permissionButton;
-    private Button testButton;
-    private Button debugButton;
     private Button emailConfigButton;
     private RecyclerView smsRecyclerView;
     private TextView emptyStateText;
@@ -114,14 +112,11 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "Finding UI components");
         statusText = findViewById(R.id.statusText);
         permissionButton = findViewById(R.id.permissionButton);
-        testButton = findViewById(R.id.testButton);
-        debugButton = findViewById(R.id.debugButton);
         emailConfigButton = findViewById(R.id.emailConfigButton);
         smsRecyclerView = findViewById(R.id.smsRecyclerView);
         emptyStateText = findViewById(R.id.emptyStateText);
 
-        Log.e(TAG, "UI components found - testButton: " + (testButton != null));
-        Log.e(TAG, "UI components found - debugButton: " + (debugButton != null));
+        Log.e(TAG, "UI components found - emailConfigButton: " + (emailConfigButton != null));
 
         // Set up RecyclerView
         smsAdapter = new SmsAdapter(this);
@@ -134,18 +129,6 @@ public class MainActivity extends AppCompatActivity {
         permissionButton.setOnClickListener(v -> {
             Log.e(TAG, "Permission button clicked");
             openNotificationSettings();
-        });
-
-        testButton.setOnClickListener(v -> {
-            Log.e(TAG, "Test button clicked");
-            Toast.makeText(this, "Test button clicked!", Toast.LENGTH_LONG).show();
-            sendTestSms();
-        });
-
-        debugButton.setOnClickListener(v -> {
-            Log.e(TAG, "Debug button clicked");
-            Toast.makeText(this, "Debug button clicked!", Toast.LENGTH_LONG).show();
-            showDebugInfo();
         });
 
         emailConfigButton.setOnClickListener(v -> {
@@ -221,13 +204,13 @@ public class MainActivity extends AppCompatActivity {
      */
     private void updatePermissionStatus(boolean hasPermission) {
         if (hasPermission) {
-            statusText.setText("✓ Notification access enabled - Ready to receive SMS");
-            statusText.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+            statusText.setText(getString(R.string.notification_access_enabled));
+            statusText.setTextColor(getResources().getColor(R.color.success_green));
             permissionButton.setVisibility(View.GONE);
             Log.d(TAG, "Ready to receive SMS notifications");
         } else {
-            statusText.setText("⚠ Notification access required");
-            statusText.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+            statusText.setText(getString(R.string.notification_access_required));
+            statusText.setTextColor(getResources().getColor(R.color.error_red));
             permissionButton.setVisibility(View.VISIBLE);
             showToast("Please enable notification access for SMS forwarding");
         }
@@ -251,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
             smsRecyclerView.setVisibility(View.GONE);
 
             if (hasPermission) {
-                emptyStateText.setText("No SMS messages received yet.\n\nSend yourself a test SMS with a verification code to see it appear here.");
+                emptyStateText.setText(getString(R.string.empty_state_message));
             } else {
                 emptyStateText.setText("Notification access is required to receive SMS messages.\n\nPlease enable notification access in Settings.");
             }
@@ -306,72 +289,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Send test SMS for validation
-     */
-    private void sendTestSms() {
-        Log.e(TAG, "=== TEST SMS BUTTON CLICKED ===");
-        System.out.println("=== TEST SMS BUTTON CLICKED ===");
 
-        // Send a test SMS with verification code
-        TestHelper.sendTestSms(this, 0); // Send first test message
-        showToast("Test SMS sent - Check if it appears in the list");
-
-        Log.e(TAG, "Test SMS triggered - waiting for response");
-        Log.e(TAG, "Broadcast receiver registered: " + (smsBroadcastReceiver != null));
-    }
-
-    /**
-     * Handle test SMS data directly (for testing purposes)
-     */
-    public void handleTestSms(String content, String sender, List<String> verificationCodes, String primaryCode) {
-        Log.e(TAG, "=== HANDLING TEST SMS DIRECTLY ===");
-        Log.e(TAG, "Content: " + content);
-        Log.e(TAG, "Sender: " + sender);
-        Log.e(TAG, "Codes: " + verificationCodes);
-        Log.e(TAG, "Primary code: " + primaryCode);
-
-        // Create SMS message object
-        SmsMessage smsMessage = new SmsMessage(content, sender, "com.cht.smsforward3.test",
-                                             System.currentTimeMillis(), verificationCodes, primaryCode);
-
-        // Add to adapter and update UI
-        smsAdapter.addSmsMessage(smsMessage);
-        updateEmptyState();
-
-        // Show toast for verification codes
-        if (primaryCode != null) {
-            showToast("Test SMS added - Verification code: " + primaryCode);
-        } else {
-            showToast("Test SMS added - No verification codes found");
-        }
-
-        Log.e(TAG, "Test SMS added to UI successfully");
-    }
-
-    /**
-     * Show debug information
-     */
-    private void showDebugInfo() {
-        Log.e(TAG, "=== DEBUG INFO BUTTON CLICKED ===");
-        Log.e(TAG, "App package: " + getPackageName());
-        Log.e(TAG, "Notification access enabled: " + isNotificationServiceEnabled());
-        Log.e(TAG, "Broadcast receiver registered: " + (smsBroadcastReceiver != null));
-        Log.e(TAG, "SMS adapter item count: " + smsAdapter.getItemCount());
-        Log.e(TAG, "Expected broadcast action: " + SMS_RECEIVED_ACTION);
-
-        // Test verification code extraction
-        String testMessage = "Your verification code is 123456";
-        List<String> codes = VerificationCodeExtractor.extractVerificationCodes(testMessage);
-        Log.e(TAG, "Test extraction - Message: " + testMessage);
-        Log.e(TAG, "Test extraction - Codes found: " + codes);
-
-        showToast("Debug info logged - check LogCat with ERROR level");
-
-        // Also print to System.out for additional visibility
-        System.out.println("=== DEBUG INFO SYSTEM OUT ===");
-        System.out.println("Debug button was clicked successfully");
-    }
 
     /**
      * Open email configuration activity

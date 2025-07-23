@@ -1,4 +1,4 @@
-package com.cht.smsforward3;
+package com.cht.smsforward;
 
 /**
  * Data model for email configuration settings

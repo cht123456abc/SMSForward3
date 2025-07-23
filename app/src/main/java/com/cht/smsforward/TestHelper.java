@@ -1,4 +1,4 @@
-package com.cht.smsforward3;
+package com.cht.smsforward;
 
 import android.content.Context;
 import android.content.Intent;
@@ -76,19 +76,11 @@ public class TestHelper {
         Log.e(TAG, "Codes: " + verificationCodes);
         Log.e(TAG, "Primary code: " + primaryCode);
 
-        // Try direct method call first (for testing)
-        if (context instanceof MainActivity) {
-            MainActivity mainActivity = (MainActivity) context;
-            mainActivity.handleTestSms(content, sender, verificationCodes, primaryCode);
-            Log.e(TAG, "Test SMS sent via direct method call");
-            return;
-        }
-
-        // Fallback to broadcast (for real SMS from service)
-        Intent intent = new Intent("com.cht.smsforward3.SMS_RECEIVED");
+        // Send test SMS via broadcast (simulating real SMS from service)
+        Intent intent = new Intent("com.cht.smsforward.SMS_RECEIVED");
         intent.putExtra("sms_content", content);
         intent.putExtra("sender", sender);
-        intent.putExtra("package_name", "com.cht.smsforward3.test");
+        intent.putExtra("package_name", "com.cht.smsforward.test");
         intent.putExtra("timestamp", System.currentTimeMillis());
 
         if (!verificationCodes.isEmpty()) {

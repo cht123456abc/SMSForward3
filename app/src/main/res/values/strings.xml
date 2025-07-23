@@ -1,3 +1,25 @@
 <resources>
-    <string name="app_name">SMSForward3</string>
+    <string name="app_name">SMSForward</string>
+    <string name="app_title">SMS Verification Code Forwarder</string>
+    <string name="notification_access_status">Notification Access Status</string>
+    <string name="notification_access_enabled">✓ Notification access enabled - Ready to receive SMS</string>
+    <string name="notification_access_required">⚠ Notification access required</string>
+    <string name="enable_notification_access">Enable Notification Access</string>
+    <string name="email_settings">Email Settings</string>
+    <string name="recent_messages">Recent SMS Messages</string>
+    <string name="empty_state_message">No SMS messages received yet.\n\nMake sure notification access is enabled and you have configured email settings.</string>
+    <string name="email_config_title">Email Configuration</string>
+    <string name="enable_email_forwarding">Enable Email Forwarding</string>
+    <string name="sender_email_label">Sender QQ Email Address</string>
+    <string name="sender_email_hint">Sender QQ Email (your-email@qq.com)</string>
+    <string name="sender_password_label">QQ Email Authorization Code</string>
+    <string name="sender_password_hint">QQ Email Authorization Code</string>
+    <string name="sender_password_note">Note: Use QQ Mail authorization code, not your QQ password</string>
+    <string name="recipient_email_label">Recipient Email Address</string>
+    <string name="recipient_email_hint">Recipient Email (recipient@example.com)</string>
+    <string name="test_email">Test Email</string>
+    <string name="save_configuration">Save Configuration</string>
+    <string name="save_settings">Save Settings</string>
+    <string name="clear_configuration">Clear Configuration</string>
+    <string name="email_instructions">Instructions:\n\n1. Enable SMTP service in your QQ Mail settings\n2. Generate an authorization code in QQ Mail\n3. Use the authorization code as password (not your QQ password)\n4. Test the configuration before saving\n5. Enable email forwarding to start receiving verification codes</string>
 </resources>

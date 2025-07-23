@@ -1,4 +1,4 @@
-package com.cht.smsforward3;
+package com.cht.smsforward;
 
 import android.app.Notification;
 import android.content.Intent;
@@ -232,7 +232,7 @@ public class SmsNotificationListener extends NotificationListenerService {
     private void broadcastSmsContent(String content, String sender, List<String> verificationCodes,
                                    String primaryCode, StatusBarNotification sbn) {
         // Create intent to broadcast SMS content
-        Intent intent = new Intent("com.cht.smsforward3.SMS_RECEIVED");
+        Intent intent = new Intent("com.cht.smsforward.SMS_RECEIVED");
         intent.putExtra("sms_content", content);
         intent.putExtra("sender", sender);
         intent.putExtra("package_name", sbn.getPackageName());

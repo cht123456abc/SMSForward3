@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.cht.smsforward3'
+    namespace 'com.cht.smsforward'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.cht.smsforward3"
+        applicationId "com.cht.smsforward"
         minSdk 34
         targetSdk 36
         versionCode 1

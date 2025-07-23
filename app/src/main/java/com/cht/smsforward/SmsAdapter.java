@@ -1,4 +1,4 @@
-package com.cht.smsforward3;
+package com.cht.smsforward;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
