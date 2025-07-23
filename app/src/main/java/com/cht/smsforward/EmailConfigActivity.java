@@ -19,12 +19,12 @@ public class EmailConfigActivity extends AppCompatActivity {
     
     private SwitchCompat emailEnabledSwitch;
     private View configFormLayout;
+    private View actionButtonsCard;
     private EditText senderEmailEditText;
     private EditText senderPasswordEditText;
     private EditText recipientEmailEditText;
     private Button testEmailButton;
     private Button saveConfigButton;
-    private Button clearConfigButton;
     private Button backButton;
     
     private EmailSettingsManager settingsManager;
@@ -55,12 +55,12 @@ public class EmailConfigActivity extends AppCompatActivity {
     private void initializeUI() {
         emailEnabledSwitch = findViewById(R.id.emailEnabledSwitch);
         configFormLayout = findViewById(R.id.configFormLayout);
+        actionButtonsCard = findViewById(R.id.actionButtonsCard);
         senderEmailEditText = findViewById(R.id.senderEmailEditText);
         senderPasswordEditText = findViewById(R.id.senderPasswordEditText);
         recipientEmailEditText = findViewById(R.id.recipientEmailEditText);
         testEmailButton = findViewById(R.id.testEmailButton);
         saveConfigButton = findViewById(R.id.saveConfigButton);
-        clearConfigButton = findViewById(R.id.clearConfigButton);
         backButton = findViewById(R.id.backButton);
     }
     
@@ -97,7 +97,6 @@ public class EmailConfigActivity extends AppCompatActivity {
         
         testEmailButton.setOnClickListener(v -> testEmailConfiguration());
         saveConfigButton.setOnClickListener(v -> saveEmailConfiguration());
-        clearConfigButton.setOnClickListener(v -> clearEmailConfiguration());
         backButton.setOnClickListener(v -> finish());
     }
     
@@ -107,7 +106,7 @@ public class EmailConfigActivity extends AppCompatActivity {
     private void updateFormVisibility() {
         boolean enabled = emailEnabledSwitch.isChecked();
         configFormLayout.setVisibility(enabled ? View.VISIBLE : View.GONE);
-        testEmailButton.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        actionButtonsCard.setVisibility(enabled ? View.VISIBLE : View.GONE);
         saveConfigButton.setText(enabled ? getString(R.string.save_configuration) : getString(R.string.save_settings));
     }
     
@@ -170,34 +169,14 @@ public class EmailConfigActivity extends AppCompatActivity {
         if (success) {
             showToast(getString(R.string.toast_config_saved));
             Log.d(TAG, "Email configuration saved");
-            finish(); // Return to main activity
+            // 不再自动返回页面，只显示成功提示
         } else {
             showToast(getString(R.string.toast_config_save_failed));
             Log.e(TAG, "Failed to save email configuration");
         }
     }
     
-    /**
-     * Clear email configuration
-     */
-    private void clearEmailConfiguration() {
-        boolean success = settingsManager.clearEmailConfig();
-        
-        if (success) {
-            showToast(getString(R.string.toast_config_cleared));
-            Log.d(TAG, "Email configuration cleared");
 
-            // Reset form
-            emailEnabledSwitch.setChecked(false);
-            senderEmailEditText.setText("");
-            senderPasswordEditText.setText("");
-            recipientEmailEditText.setText("");
-            updateFormVisibility();
-        } else {
-            showToast(getString(R.string.toast_config_clear_failed));
-            Log.e(TAG, "Failed to clear email configuration");
-        }
-    }
     
     /**
      * Get email configuration from form inputs

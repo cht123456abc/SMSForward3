@@ -93,6 +93,7 @@
                 android:layout_gravity="end"
                 android:layout_marginTop="4dp"
                 android:gravity="center"
+                android:textAlignment="center"
                 style="?android:attr/buttonStyleSmall" />
 
         </LinearLayout>

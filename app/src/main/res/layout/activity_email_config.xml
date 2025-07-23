@@ -52,7 +52,7 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Email Enable/Disable Switch Card -->
+        <!-- Email Enable/Disable Switch Card with Back Button -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -70,6 +70,19 @@
                 android:gravity="center_vertical"
                 android:padding="20dp">
 
+                <!-- 返回按钮 -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/backButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/back_button"
+                    android:layout_marginEnd="16dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    app:icon="@drawable/ic_arrow_back_24dp"
+                    style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+                <!-- 邮件转发开关区域 -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -177,8 +190,9 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Action Buttons Card -->
+        <!-- Action Buttons Card (只在启用邮件转发时显示) -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/actionButtonsCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
@@ -191,77 +205,39 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:orientation="horizontal"
+                android:gravity="center"
                 android:padding="20dp">
 
-                <!-- Primary Action Buttons -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/testEmailButton"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_weight="1"
+                    android:text="@string/test_email"
+                    android:layout_marginEnd="8dp"
                     android:gravity="center"
-                    android:layout_marginBottom="12dp">
+                    android:textAlignment="center"
+                    app:icon="@drawable/ic_send_24dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/testEmailButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/test_email"
-                        android:layout_marginEnd="8dp"
-                        android:gravity="center"
-                        app:icon="@drawable/ic_send_24dp"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/saveConfigButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/save_configuration"
-                        android:layout_marginStart="8dp"
-                        android:gravity="center"
-                        app:icon="@drawable/ic_save_24dp"
-                        style="@style/Widget.MaterialComponents.Button" />
-
-                </LinearLayout>
-
-                <!-- Secondary Actions -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/saveConfigButton"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/backButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/back_button"
-                        android:layout_marginEnd="8dp"
-                        android:gravity="center"
-                        app:icon="@drawable/ic_arrow_back_24dp"
-                        style="@style/Widget.MaterialComponents.Button.TextButton" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/clearConfigButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/clear_configuration"
-                        android:layout_marginStart="8dp"
-                        android:gravity="center"
-                        app:icon="@drawable/ic_delete_24dp"
-                        style="@style/Widget.MaterialComponents.Button.TextButton"
-                        android:textColor="?attr/colorError"
-                        app:iconTint="?attr/colorError" />
-
-                </LinearLayout>
+                    android:layout_weight="1"
+                    android:text="@string/save_configuration"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    app:icon="@drawable/ic_save_24dp"
+                    style="@style/Widget.MaterialComponents.Button" />
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
+
+
 
         <!-- Instructions Card -->
         <com.google.android.material.card.MaterialCardView
