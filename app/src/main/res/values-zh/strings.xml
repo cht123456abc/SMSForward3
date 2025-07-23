@@ -13,13 +13,38 @@
     <string name="sender_email_label">发送方QQ邮箱地址</string>
     <string name="sender_email_hint">发送方QQ邮箱 (your-email@qq.com)</string>
     <string name="sender_password_label">QQ邮箱授权码</string>
-    <string name="sender_password_hint">QQ邮箱授权码</string>
-    <string name="sender_password_note">注意：使用QQ邮箱授权码，不是您的QQ密码</string>
+    <string name="sender_password_hint">QQ邮箱授权码(非qq密码)</string>
     <string name="recipient_email_label">接收方邮箱地址</string>
     <string name="recipient_email_hint">接收方邮箱 (recipient@example.com)</string>
     <string name="test_email">测试邮件</string>
     <string name="save_configuration">保存配置</string>
     <string name="save_settings">保存设置</string>
     <string name="clear_configuration">清除配置</string>
-    <string name="email_instructions">使用说明：\n\n1. 在QQ邮箱设置中启用SMTP服务\n2. 在QQ邮箱中生成授权码\n3. 使用授权码作为密码（不是您的QQ密码）\n4. 保存前先测试配置\n5. 启用邮件转发以开始接收验证码</string>
+    <string name="email_instructions">\n1. 在QQ邮箱设置中启用SMTP服务\n2. 在QQ邮箱中生成授权码\n3. 使用授权码作为密码（不是您的QQ密码）\n4. 保存前先测试配置\n5. 启用邮件转发以开始接收验证码</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_notification_access_required">请启用通知访问权限以进行短信转发</string>
+    <string name="toast_new_verification_code">新验证码：%1$s</string>
+    <string name="toast_new_sms_with_codes">收到包含验证码的新短信</string>
+    <string name="toast_new_sms">收到新短信</string>
+    <string name="toast_fill_email_fields">请正确填写所有邮件字段</string>
+    <string name="toast_testing_email">正在测试邮件配置...</string>
+    <string name="toast_test_email_success">测试邮件发送成功！</string>
+    <string name="toast_test_email_failed">测试邮件失败：%1$s</string>
+    <string name="toast_config_saved">邮件配置保存成功</string>
+    <string name="toast_config_save_failed">邮件配置保存失败</string>
+    <string name="toast_config_cleared">邮件配置已清除</string>
+    <string name="toast_config_clear_failed">邮件配置清除失败</string>
+    <string name="toast_code_copied">验证码已复制：%1$s</string>
+
+    <!-- Button and UI Text -->
+    <string name="back_button">返回</string>
+    <string name="copy_primary_code">复制主验证码</string>
+    <string name="copy_code">复制验证码</string>
+    <string name="copy_code_with_value">复制 %1$s</string>
+    <string name="verification_codes_label">验证码：</string>
+    <string name="setup_instructions_title">设置说明</string>
+    <string name="email_forwarding_description">自动将验证码转发到邮箱</string>
+    <string name="email_config_description">配置验证码邮件转发</string>
+    <string name="notification_access_description">需要通知访问权限才能接收短信消息。\n\n请在设置中启用通知访问权限。</string>
 </resources>

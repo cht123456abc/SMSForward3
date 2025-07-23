@@ -38,12 +38,12 @@
                     android:gravity="center"
                     android:layout_marginBottom="8dp"
                     android:drawablePadding="12dp"
-                    app:drawableTopCompat="@android:drawable/ic_dialog_email" />
+                    app:drawableTopCompat="@drawable/ic_email_24dp" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Configure email forwarding for verification codes"
+                    android:text="@string/email_config_description"
                     android:textSize="16sp"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:gravity="center" />
@@ -88,7 +88,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Automatically forward verification codes to email"
+                        android:text="@string/email_forwarding_description"
                         android:textSize="14sp"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -128,7 +128,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:hint="@string/sender_email_hint"
-                    app:startIconDrawable="@android:drawable/ic_dialog_email"
+                    app:startIconDrawable="@drawable/ic_email_24dp"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -145,7 +145,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
                     android:hint="@string/sender_password_hint"
-                    app:startIconDrawable="@android:drawable/ic_lock_lock"
+                    app:startIconDrawable="@drawable/ic_lock_24dp"
                     app:endIconMode="password_toggle"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
@@ -157,22 +157,12 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/sender_password_note"
-                    android:textSize="12sp"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:layout_marginBottom="16dp"
-                    android:drawablePadding="8dp"
-                    app:drawableStartCompat="@android:drawable/ic_dialog_info" />
-
                 <!-- Recipient Email -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/recipient_email_hint"
-                    app:startIconDrawable="@android:drawable/ic_dialog_email"
+                    app:startIconDrawable="@drawable/ic_email_24dp"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -204,12 +194,13 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
+                <!-- Primary Action Buttons -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="12dp">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/testEmailButton"
@@ -218,7 +209,8 @@
                         android:layout_weight="1"
                         android:text="@string/test_email"
                         android:layout_marginEnd="8dp"
-                        app:icon="@android:drawable/ic_menu_send"
+                        android:gravity="center"
+                        app:icon="@drawable/ic_send_24dp"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
                     <com.google.android.material.button.MaterialButton
@@ -228,21 +220,44 @@
                         android:layout_weight="1"
                         android:text="@string/save_configuration"
                         android:layout_marginStart="8dp"
-                        app:icon="@android:drawable/ic_menu_save"
+                        android:gravity="center"
+                        app:icon="@drawable/ic_save_24dp"
                         style="@style/Widget.MaterialComponents.Button" />
 
                 </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/clearConfigButton"
+                <!-- Secondary Actions -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/clear_configuration"
-                    app:icon="@android:drawable/ic_menu_delete"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="?attr/colorError"
-                    android:textColor="?attr/colorError"
-                    app:iconTint="?attr/colorError" />
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/backButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/back_button"
+                        android:layout_marginEnd="8dp"
+                        android:gravity="center"
+                        app:icon="@drawable/ic_arrow_back_24dp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/clearConfigButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/clear_configuration"
+                        android:layout_marginStart="8dp"
+                        android:gravity="center"
+                        app:icon="@drawable/ic_delete_24dp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:textColor="?attr/colorError"
+                        app:iconTint="?attr/colorError" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -267,13 +282,13 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Setup Instructions"
+                    android:text="@string/setup_instructions_title"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:layout_marginBottom="12dp"
                     android:drawablePadding="8dp"
-                    app:drawableStartCompat="@android:drawable/ic_dialog_info" />
+                    app:drawableStartCompat="@drawable/ic_info_24dp" />
 
                 <TextView
                     android:layout_width="match_parent"

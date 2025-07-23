@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
             statusText.setText(getString(R.string.notification_access_required));
             statusText.setTextColor(getResources().getColor(R.color.error_red));
             permissionButton.setVisibility(View.VISIBLE);
-            showToast("Please enable notification access for SMS forwarding");
+            showToast(getString(R.string.toast_notification_access_required));
         }
 
         // Update empty state visibility
@@ -236,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
             if (hasPermission) {
                 emptyStateText.setText(getString(R.string.empty_state_message));
             } else {
-                emptyStateText.setText("Notification access is required to receive SMS messages.\n\nPlease enable notification access in Settings.");
+                emptyStateText.setText(getString(R.string.notification_access_description));
             }
         }
     }
@@ -278,11 +278,11 @@ public class MainActivity extends AppCompatActivity {
 
             // Show toast for verification codes
             if (primaryCode != null) {
-                showToast("New verification code: " + primaryCode);
+                showToast(getString(R.string.toast_new_verification_code, primaryCode));
             } else if (!codes.isEmpty()) {
-                showToast("New SMS with verification codes received");
+                showToast(getString(R.string.toast_new_sms_with_codes));
             } else {
-                showToast("New SMS received");
+                showToast(getString(R.string.toast_new_sms));
             }
 
             Log.d(TAG, "SMS added to UI - Sender: " + sender + ", Codes: " + codes.size());

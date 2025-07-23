@@ -25,6 +25,7 @@ public class EmailConfigActivity extends AppCompatActivity {
     private Button testEmailButton;
     private Button saveConfigButton;
     private Button clearConfigButton;
+    private Button backButton;
     
     private EmailSettingsManager settingsManager;
     private EmailSender emailSender;
@@ -60,6 +61,7 @@ public class EmailConfigActivity extends AppCompatActivity {
         testEmailButton = findViewById(R.id.testEmailButton);
         saveConfigButton = findViewById(R.id.saveConfigButton);
         clearConfigButton = findViewById(R.id.clearConfigButton);
+        backButton = findViewById(R.id.backButton);
     }
     
     /**
@@ -96,6 +98,7 @@ public class EmailConfigActivity extends AppCompatActivity {
         testEmailButton.setOnClickListener(v -> testEmailConfiguration());
         saveConfigButton.setOnClickListener(v -> saveEmailConfiguration());
         clearConfigButton.setOnClickListener(v -> clearEmailConfiguration());
+        backButton.setOnClickListener(v -> finish());
     }
     
     /**
@@ -115,11 +118,11 @@ public class EmailConfigActivity extends AppCompatActivity {
         EmailConfig config = getEmailConfigFromForm();
         
         if (!config.isValid()) {
-            showToast("Please fill in all email fields correctly");
+            showToast(getString(R.string.toast_fill_email_fields));
             return;
         }
-        
-        showToast("Testing email configuration...");
+
+        showToast(getString(R.string.toast_testing_email));
         testEmailButton.setEnabled(false);
         
         emailSender.sendTestEmail(config, new EmailSender.EmailSendCallback() {
@@ -127,7 +130,7 @@ public class EmailConfigActivity extends AppCompatActivity {
             public void onSuccess() {
                 runOnUiThread(() -> {
                     testEmailButton.setEnabled(true);
-                    showToast("Test email sent successfully!");
+                    showToast(getString(R.string.toast_test_email_success));
                     Log.d(TAG, "Test email sent successfully");
                 });
             }
@@ -136,7 +139,7 @@ public class EmailConfigActivity extends AppCompatActivity {
             public void onFailure(String error) {
                 runOnUiThread(() -> {
                     testEmailButton.setEnabled(true);
-                    showToast("Test email failed: " + error);
+                    showToast(getString(R.string.toast_test_email_failed, error));
                     Log.e(TAG, "Test email failed: " + error);
                 });
             }
@@ -153,7 +156,7 @@ public class EmailConfigActivity extends AppCompatActivity {
             config = getEmailConfigFromForm();
             
             if (!config.isValid()) {
-                showToast("Please fill in all email fields correctly");
+                showToast(getString(R.string.toast_fill_email_fields));
                 return;
             }
         } else {
@@ -165,11 +168,11 @@ public class EmailConfigActivity extends AppCompatActivity {
         boolean success = settingsManager.saveEmailConfig(config);
         
         if (success) {
-            showToast("Email configuration saved successfully");
+            showToast(getString(R.string.toast_config_saved));
             Log.d(TAG, "Email configuration saved");
             finish(); // Return to main activity
         } else {
-            showToast("Failed to save email configuration");
+            showToast(getString(R.string.toast_config_save_failed));
             Log.e(TAG, "Failed to save email configuration");
         }
     }
@@ -181,9 +184,9 @@ public class EmailConfigActivity extends AppCompatActivity {
         boolean success = settingsManager.clearEmailConfig();
         
         if (success) {
-            showToast("Email configuration cleared");
+            showToast(getString(R.string.toast_config_cleared));
             Log.d(TAG, "Email configuration cleared");
-            
+
             // Reset form
             emailEnabledSwitch.setChecked(false);
             senderEmailEditText.setText("");
@@ -191,7 +194,7 @@ public class EmailConfigActivity extends AppCompatActivity {
             recipientEmailEditText.setText("");
             updateFormVisibility();
         } else {
-            showToast("Failed to clear email configuration");
+            showToast(getString(R.string.toast_config_clear_failed));
             Log.e(TAG, "Failed to clear email configuration");
         }
     }

@@ -67,7 +67,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Verification Codes:"
+                android:text="@string/verification_codes_label"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textColor="@android:color/black"
@@ -88,10 +88,11 @@
                 android:id="@+id/copyCodeButton"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
-                android:text="Copy Primary Code"
+                android:text="@string/copy_primary_code"
                 android:textSize="12sp"
                 android:layout_gravity="end"
                 android:layout_marginTop="4dp"
+                android:gravity="center"
                 style="?android:attr/buttonStyleSmall" />
 
         </LinearLayout>

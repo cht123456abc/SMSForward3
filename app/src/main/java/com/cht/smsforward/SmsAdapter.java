@@ -122,7 +122,7 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
                     String primaryCode = smsMessage.getPrimaryVerificationCode();
                     if (primaryCode != null) {
                         copyToClipboard(primaryCode);
-                        Toast.makeText(context, "Verification code copied: " + primaryCode, 
+                        Toast.makeText(context, context.getString(R.string.toast_code_copied, primaryCode),
                                      Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -130,9 +130,9 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
                 // Update button text with primary code
                 String primaryCode = smsMessage.getPrimaryVerificationCode();
                 if (primaryCode != null) {
-                    copyCodeButton.setText("Copy " + primaryCode);
+                    copyCodeButton.setText(context.getString(R.string.copy_code_with_value, primaryCode));
                 } else {
-                    copyCodeButton.setText("Copy Code");
+                    copyCodeButton.setText(context.getString(R.string.copy_code));
                 }
                 
             } else {
@@ -142,7 +142,7 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
         
         private void copyToClipboard(String text) {
             ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-            ClipData clip = ClipData.newPlainText("Verification Code", text);
+            ClipData clip = ClipData.newPlainText(context.getString(R.string.copy_code), text);
             clipboard.setPrimaryClip(clip);
         }
     }

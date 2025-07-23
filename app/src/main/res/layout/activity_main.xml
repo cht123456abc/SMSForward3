@@ -91,6 +91,7 @@
                         android:text="@string/enable_notification_access"
                         android:layout_marginEnd="8dp"
                         android:visibility="gone"
+                        android:gravity="center"
                         style="@style/Widget.MaterialComponents.Button" />
 
                     <com.google.android.material.button.MaterialButton
@@ -100,7 +101,8 @@
                         android:layout_weight="1"
                         android:text="@string/email_settings"
                         android:layout_marginStart="8dp"
-                        app:icon="@android:drawable/ic_menu_send"
+                        android:gravity="center"
+                        app:icon="@drawable/ic_email_24dp"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
                 </LinearLayout>
@@ -135,7 +137,7 @@
                     android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="16dp"
                     android:drawablePadding="8dp"
-                    app:drawableStartCompat="@android:drawable/ic_dialog_email" />
+                    app:drawableStartCompat="@drawable/ic_message_24dp" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/smsRecyclerView"

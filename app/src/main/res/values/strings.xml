@@ -13,8 +13,7 @@
     <string name="sender_email_label">Sender QQ Email Address</string>
     <string name="sender_email_hint">Sender QQ Email (your-email@qq.com)</string>
     <string name="sender_password_label">QQ Email Authorization Code</string>
-    <string name="sender_password_hint">QQ Email Authorization Code</string>
-    <string name="sender_password_note">Note: Use QQ Mail authorization code, not your QQ password</string>
+    <string name="sender_password_hint">QQ Email Authorization Code(not password)</string>
     <string name="recipient_email_label">Recipient Email Address</string>
     <string name="recipient_email_hint">Recipient Email (recipient@example.com)</string>
     <string name="test_email">Test Email</string>
@@ -22,4 +21,30 @@
     <string name="save_settings">Save Settings</string>
     <string name="clear_configuration">Clear Configuration</string>
     <string name="email_instructions">Instructions:\n\n1. Enable SMTP service in your QQ Mail settings\n2. Generate an authorization code in QQ Mail\n3. Use the authorization code as password (not your QQ password)\n4. Test the configuration before saving\n5. Enable email forwarding to start receiving verification codes</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_notification_access_required">Please enable notification access for SMS forwarding</string>
+    <string name="toast_new_verification_code">New verification code: %1$s</string>
+    <string name="toast_new_sms_with_codes">New SMS with verification codes received</string>
+    <string name="toast_new_sms">New SMS received</string>
+    <string name="toast_fill_email_fields">Please fill in all email fields correctly</string>
+    <string name="toast_testing_email">Testing email configuration...</string>
+    <string name="toast_test_email_success">Test email sent successfully!</string>
+    <string name="toast_test_email_failed">Test email failed: %1$s</string>
+    <string name="toast_config_saved">Email configuration saved successfully</string>
+    <string name="toast_config_save_failed">Failed to save email configuration</string>
+    <string name="toast_config_cleared">Email configuration cleared</string>
+    <string name="toast_config_clear_failed">Failed to clear email configuration</string>
+    <string name="toast_code_copied">Verification code copied: %1$s</string>
+
+    <!-- Button and UI Text -->
+    <string name="back_button">Back</string>
+    <string name="copy_primary_code">Copy Primary Code</string>
+    <string name="copy_code">Copy Code</string>
+    <string name="copy_code_with_value">Copy %1$s</string>
+    <string name="verification_codes_label">Verification Codes:</string>
+    <string name="setup_instructions_title">Setup Instructions</string>
+    <string name="email_forwarding_description">Automatically forward verification codes to email</string>
+    <string name="email_config_description">Configure email forwarding for verification codes</string>
+    <string name="notification_access_description">Notification access is required to receive SMS messages.\n\nPlease enable notification access in Settings.</string>
 </resources>
