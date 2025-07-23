@@ -1,5 +1,6 @@
 package com.cht.smsforward;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -138,7 +139,7 @@ public class EmailConfigActivity extends AppCompatActivity {
             public void onFailure(String error) {
                 runOnUiThread(() -> {
                     testEmailButton.setEnabled(true);
-                    showToast(getString(R.string.toast_test_email_failed, error));
+                    showDetailedErrorDialog(error);
                     Log.e(TAG, "Test email failed: " + error);
                 });
             }
@@ -190,6 +191,62 @@ public class EmailConfigActivity extends AppCompatActivity {
         return new EmailConfig(senderEmail, senderPassword, recipientEmail, enabled);
     }
     
+    /**
+     * Show detailed error dialog with network diagnostics option
+     */
+    private void showDetailedErrorDialog(String error) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("邮件发送失败");
+        builder.setMessage(error);
+
+        // Add network diagnostics button
+        builder.setPositiveButton("网络诊断", (dialog, which) -> {
+            runNetworkDiagnostics();
+        });
+
+        builder.setNegativeButton("确定", null);
+        builder.show();
+    }
+
+    /**
+     * Run network diagnostics
+     */
+    private void runNetworkDiagnostics() {
+        // Show progress dialog
+        AlertDialog progressDialog = new AlertDialog.Builder(this)
+                .setTitle("网络诊断")
+                .setMessage("正在检测网络连接...")
+                .setCancelable(false)
+                .create();
+        progressDialog.show();
+
+        NetworkDiagnostics.runDiagnostics(this, result -> {
+            runOnUiThread(() -> {
+                progressDialog.dismiss();
+                showDiagnosticsResult(result);
+            });
+        });
+    }
+
+    /**
+     * Show network diagnostics result
+     */
+    private void showDiagnosticsResult(NetworkDiagnostics.DiagnosticsResult result) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("网络诊断结果");
+        builder.setMessage(result.getSummary());
+        builder.setPositiveButton("确定", null);
+
+        // Add retry button if there might be a solution
+        if (result.networkAvailable && (result.tlsPortOpen || result.sslPortOpen)) {
+            builder.setNegativeButton("重试发送", (dialog, which) -> {
+                testEmailConfiguration();
+            });
+        }
+
+        builder.show();
+    }
+
     /**
      * Show toast message
      */

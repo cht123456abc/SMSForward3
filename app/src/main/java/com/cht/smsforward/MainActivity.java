@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView emptyStateText;
     private SmsAdapter smsAdapter;
     private SmsBroadcastReceiver smsBroadcastReceiver;
+    private SmsDataManager smsDataManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,8 +55,14 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // Initialize data manager
+        smsDataManager = new SmsDataManager(this);
+
         // Initialize UI components
         initializeUI();
+
+        // Load saved SMS messages
+        loadSavedMessages();
 
         // Set up SMS broadcast receiver
         setupSmsBroadcastReceiver();
@@ -276,6 +283,9 @@ public class MainActivity extends AppCompatActivity {
             smsAdapter.addSmsMessage(smsMessage);
             updateEmptyState();
 
+            // Save to persistent storage
+            smsDataManager.addSmsMessage(smsMessage);
+
             // Show toast for verification codes
             if (primaryCode != null) {
                 showToast(getString(R.string.toast_new_verification_code, primaryCode));
@@ -290,6 +300,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+
+    /**
+     * Load saved SMS messages from persistent storage
+     */
+    private void loadSavedMessages() {
+        List<SmsMessage> savedMessages = smsDataManager.loadSmsMessages();
+        for (SmsMessage message : savedMessages) {
+            smsAdapter.addSmsMessage(message);
+        }
+        updateEmptyState();
+        Log.d(TAG, "Loaded " + savedMessages.size() + " saved SMS messages");
+    }
 
     /**
      * Open email configuration activity

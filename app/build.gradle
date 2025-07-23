@@ -58,6 +58,9 @@ dependencies {
     // Encrypted SharedPreferences for secure credential storage
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
+    // JSON serialization for data persistence
+    implementation 'com.google.code.gson:gson:2.10.1'
+
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

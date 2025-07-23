@@ -37,6 +37,18 @@
     <string name="toast_config_clear_failed">邮件配置清除失败</string>
     <string name="toast_code_copied">验证码已复制：%1$s</string>
 
+    <!-- Email Error Messages -->
+    <string name="email_error_timeout">网络连接超时。请检查：\n1. 网络连接是否正常\n2. 是否连接了VPN或代理\n3. 防火墙是否阻止了邮件端口</string>
+    <string name="email_error_auth">邮箱认证失败。请检查：\n1. QQ邮箱地址是否正确\n2. 授权码是否正确（不是QQ密码）\n3. 是否已在QQ邮箱中启用SMTP服务</string>
+    <string name="email_error_connection">无法连接到邮件服务器。请检查：\n1. 网络连接状态\n2. 是否使用了网络代理\n3. 运营商是否限制了邮件端口</string>
+    <string name="email_retry_ssl">TLS连接失败，正在尝试SSL...</string>
+    <string name="email_both_failed">TLS和SSL连接均失败</string>
+    <string name="network_diagnostics">网络诊断</string>
+    <string name="network_diagnostics_running">正在检测网络连接...</string>
+    <string name="network_diagnostics_result">网络诊断结果</string>
+    <string name="retry_send">重试发送</string>
+    <string name="email_send_failed">邮件发送失败</string>
+
     <!-- Button and UI Text -->
     <string name="back_button">返回</string>
     <string name="copy_primary_code">复制主验证码</string>

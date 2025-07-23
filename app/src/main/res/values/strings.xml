@@ -37,6 +37,18 @@
     <string name="toast_config_clear_failed">Failed to clear email configuration</string>
     <string name="toast_code_copied">Verification code copied: %1$s</string>
 
+    <!-- Email Error Messages -->
+    <string name="email_error_timeout">Network connection timeout. Please check:\n1. Network connection\n2. VPN or proxy settings\n3. Firewall blocking email ports</string>
+    <string name="email_error_auth">Email authentication failed. Please check:\n1. QQ email address is correct\n2. Authorization code is correct (not QQ password)\n3. SMTP service is enabled in QQ Mail</string>
+    <string name="email_error_connection">Cannot connect to email server. Please check:\n1. Network connection status\n2. Network proxy settings\n3. ISP email port restrictions</string>
+    <string name="email_retry_ssl">TLS connection failed, trying SSL...</string>
+    <string name="email_both_failed">Both TLS and SSL connections failed</string>
+    <string name="network_diagnostics">Network Diagnostics</string>
+    <string name="network_diagnostics_running">Checking network connection...</string>
+    <string name="network_diagnostics_result">Network Diagnostics Result</string>
+    <string name="retry_send">Retry Send</string>
+    <string name="email_send_failed">Email Send Failed</string>
+
     <!-- Button and UI Text -->
     <string name="back_button">Back</string>
     <string name="copy_primary_code">Copy Primary Code</string>
