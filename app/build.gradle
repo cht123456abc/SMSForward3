@@ -26,6 +26,15 @@ android {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+
+    packagingOptions {
+        pickFirst '**/META-INF/NOTICE.md'
+        pickFirst '**/META-INF/LICENSE.md'
+        pickFirst '**/META-INF/NOTICE'
+        pickFirst '**/META-INF/LICENSE'
+        pickFirst '**/META-INF/NOTICE.txt'
+        pickFirst '**/META-INF/LICENSE.txt'
+    }
 }
 
 dependencies {
@@ -41,6 +50,13 @@ dependencies {
 
     // LocalBroadcastManager for internal broadcasts
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
+
+    // Email functionality
+    implementation 'com.sun.mail:android-mail:1.6.7'
+    implementation 'com.sun.mail:android-activation:1.6.7'
+
+    // Encrypted SharedPreferences for secure credential storage
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit

@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private Button permissionButton;
     private Button testButton;
     private Button debugButton;
+    private Button emailConfigButton;
     private RecyclerView smsRecyclerView;
     private TextView emptyStateText;
     private SmsAdapter smsAdapter;
@@ -115,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
         permissionButton = findViewById(R.id.permissionButton);
         testButton = findViewById(R.id.testButton);
         debugButton = findViewById(R.id.debugButton);
+        emailConfigButton = findViewById(R.id.emailConfigButton);
         smsRecyclerView = findViewById(R.id.smsRecyclerView);
         emptyStateText = findViewById(R.id.emptyStateText);
 
@@ -144,6 +146,11 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "Debug button clicked");
             Toast.makeText(this, "Debug button clicked!", Toast.LENGTH_LONG).show();
             showDebugInfo();
+        });
+
+        emailConfigButton.setOnClickListener(v -> {
+            Log.e(TAG, "Email config button clicked");
+            openEmailConfiguration();
         });
 
         Log.e(TAG, "UI components initialized successfully");
@@ -364,6 +371,14 @@ public class MainActivity extends AppCompatActivity {
         // Also print to System.out for additional visibility
         System.out.println("=== DEBUG INFO SYSTEM OUT ===");
         System.out.println("Debug button was clicked successfully");
+    }
+
+    /**
+     * Open email configuration activity
+     */
+    private void openEmailConfiguration() {
+        Intent intent = new Intent(this, EmailConfigActivity.class);
+        startActivity(intent);
     }
 
     /**
