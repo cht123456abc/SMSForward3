@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private SmsAdapter smsAdapter;
     private SmsBroadcastReceiver smsBroadcastReceiver;
     private SmsDataManager smsDataManager;
+    private EmailSender emailSender;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +58,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize data manager
         smsDataManager = new SmsDataManager(this);
+
+        // Initialize email sender
+        emailSender = new EmailSender(this);
 
         // Initialize UI components
         initializeUI();
@@ -286,6 +290,11 @@ public class MainActivity extends AppCompatActivity {
             // Save to persistent storage
             smsDataManager.addSmsMessage(smsMessage);
 
+            // Send verification code email if available
+            if (primaryCode != null) {
+                sendVerificationCodeEmail(smsMessage, primaryCode);
+            }
+
             // Show toast for verification codes
             if (primaryCode != null) {
                 showToast(getString(R.string.toast_new_verification_code, primaryCode));
@@ -306,11 +315,17 @@ public class MainActivity extends AppCompatActivity {
      */
     private void loadSavedMessages() {
         List<SmsMessage> savedMessages = smsDataManager.loadSmsMessages();
+
+        // Sort messages by timestamp in descending order (newest first)
+        savedMessages.sort((msg1, msg2) -> Long.compare(msg2.getTimestamp(), msg1.getTimestamp()));
+
+        // Clear existing messages and add sorted messages
+        smsAdapter.clearMessages();
         for (SmsMessage message : savedMessages) {
             smsAdapter.addSmsMessage(message);
         }
         updateEmptyState();
-        Log.d(TAG, "Loaded " + savedMessages.size() + " saved SMS messages");
+        Log.d(TAG, "Loaded " + savedMessages.size() + " saved SMS messages (sorted by timestamp)");
     }
 
     /**
@@ -319,6 +334,46 @@ public class MainActivity extends AppCompatActivity {
     private void openEmailConfiguration() {
         Intent intent = new Intent(this, EmailConfigActivity.class);
         startActivity(intent);
+    }
+
+    /**
+     * Send verification code via email and update SMS message status
+     */
+    private void sendVerificationCodeEmail(SmsMessage smsMessage, String verificationCode) {
+        if (emailSender == null) {
+            Log.w(TAG, "Email sender not initialized");
+            return;
+        }
+
+        // Update status to sending
+        smsMessage.setEmailSending();
+        smsAdapter.notifyDataSetChanged();
+        smsDataManager.updateSmsMessage(smsMessage);
+
+        Log.d(TAG, "Attempting to send verification code email: " + verificationCode);
+
+        emailSender.sendVerificationCodeEmail(verificationCode, smsMessage.getContent(),
+                smsMessage.getSender(), new EmailSender.EmailSendCallback() {
+            @Override
+            public void onSuccess() {
+                Log.d(TAG, "✅ Verification code email sent successfully");
+                runOnUiThread(() -> {
+                    smsMessage.setEmailSent();
+                    smsAdapter.notifyDataSetChanged();
+                    smsDataManager.updateSmsMessage(smsMessage);
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+                Log.e(TAG, "❌ Failed to send verification code email: " + error);
+                runOnUiThread(() -> {
+                    smsMessage.setEmailFailed(error);
+                    smsAdapter.notifyDataSetChanged();
+                    smsDataManager.updateSmsMessage(smsMessage);
+                });
+            }
+        });
     }
 
     /**

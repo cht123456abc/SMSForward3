@@ -73,28 +73,43 @@
                 android:textColor="@android:color/black"
                 android:layout_marginBottom="4dp" />
 
-            <TextView
-                android:id="@+id/verificationCodesText"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="1234, 5678"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="#FF6F00"
-                android:background="#FFECB3"
-                android:padding="4dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <Button
-                android:id="@+id/copyCodeButton"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:text="@string/copy_primary_code"
-                android:textSize="12sp"
-                android:layout_gravity="end"
-                android:layout_marginTop="4dp"
-                android:gravity="center"
-                android:textAlignment="center"
-                style="?android:attr/buttonStyleSmall" />
+                <TextView
+                    android:id="@+id/verificationCodesText"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="1234, 5678"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#FF6F00"
+                    android:background="#FFECB3"
+                    android:padding="8dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?android:attr/selectableItemBackground" />
+
+                <TextView
+                    android:id="@+id/emailStatusIndicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="未发送"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:background="#E0E0E0"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
 
         </LinearLayout>
 

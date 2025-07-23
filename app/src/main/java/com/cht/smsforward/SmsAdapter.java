@@ -50,11 +50,21 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
     }
     
     /**
-     * Add a new SMS message to the list
+     * Add a new SMS message to the list in the correct position (sorted by timestamp)
      */
     public void addSmsMessage(SmsMessage smsMessage) {
-        smsMessages.add(0, smsMessage); // Add to top of list
-        notifyItemInserted(0);
+        // Find the correct insertion position (sorted by timestamp descending)
+        int insertIndex = 0;
+        for (int i = 0; i < smsMessages.size(); i++) {
+            if (smsMessage.getTimestamp() > smsMessages.get(i).getTimestamp()) {
+                insertIndex = i;
+                break;
+            }
+            insertIndex = i + 1;
+        }
+
+        smsMessages.add(insertIndex, smsMessage);
+        notifyItemInserted(insertIndex);
     }
     
     /**
@@ -83,7 +93,7 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
         private TextView contentText;
         private LinearLayout verificationCodesLayout;
         private TextView verificationCodesText;
-        private Button copyCodeButton;
+        private TextView emailStatusIndicator;
         private TextView packageText;
         
         public SmsViewHolder(@NonNull View itemView) {
@@ -94,7 +104,7 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
             contentText = itemView.findViewById(R.id.contentText);
             verificationCodesLayout = itemView.findViewById(R.id.verificationCodesLayout);
             verificationCodesText = itemView.findViewById(R.id.verificationCodesText);
-            copyCodeButton = itemView.findViewById(R.id.copyCodeButton);
+            emailStatusIndicator = itemView.findViewById(R.id.emailStatusIndicator);
             packageText = itemView.findViewById(R.id.packageText);
         }
         
@@ -112,13 +122,13 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
             // Handle verification codes
             if (smsMessage.hasVerificationCodes()) {
                 verificationCodesLayout.setVisibility(View.VISIBLE);
-                
+
                 // Display all verification codes
                 String codesText = String.join(", ", smsMessage.getVerificationCodes());
                 verificationCodesText.setText(codesText);
-                
-                // Set up copy button
-                copyCodeButton.setOnClickListener(v -> {
+
+                // Set up click to copy functionality
+                verificationCodesText.setOnClickListener(v -> {
                     String primaryCode = smsMessage.getPrimaryVerificationCode();
                     if (primaryCode != null) {
                         copyToClipboard(primaryCode);
@@ -126,20 +136,55 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
                                      Toast.LENGTH_SHORT).show();
                     }
                 });
-                
-                // Update button text with primary code
-                String primaryCode = smsMessage.getPrimaryVerificationCode();
-                if (primaryCode != null) {
-                    copyCodeButton.setText(context.getString(R.string.copy_code_with_value, primaryCode));
-                } else {
-                    copyCodeButton.setText(context.getString(R.string.copy_code));
-                }
+
+                // Update email status indicator
+                updateEmailStatusIndicator(smsMessage);
                 
             } else {
                 verificationCodesLayout.setVisibility(View.GONE);
             }
         }
         
+        /**
+         * Update email status indicator based on SMS message email forward status
+         */
+        private void updateEmailStatusIndicator(SmsMessage smsMessage) {
+            EmailForwardStatus status = smsMessage.getEmailForwardStatus();
+
+            if (status == null || status == EmailForwardStatus.DISABLED) {
+                emailStatusIndicator.setVisibility(View.GONE);
+                return;
+            }
+
+            emailStatusIndicator.setVisibility(View.VISIBLE);
+
+            switch (status) {
+                case NOT_SENT:
+                    emailStatusIndicator.setText("未转发");
+                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.darker_gray));
+                    break;
+                case SENDING:
+                    emailStatusIndicator.setText("转发中");
+                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_orange_dark));
+                    break;
+                case SUCCESS:
+                    emailStatusIndicator.setText("已转发");
+                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_green_dark));
+                    break;
+                case FAILED:
+                    emailStatusIndicator.setText("转发失败");
+                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_dark));
+                    break;
+                default:
+                    emailStatusIndicator.setVisibility(View.GONE);
+                    break;
+            }
+        }
+
         private void copyToClipboard(String text) {
             ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText(context.getString(R.string.copy_code), text);

@@ -21,7 +21,7 @@ public class SmsNotificationListener extends NotificationListenerService {
 
     private static final String TAG = "SmsNotificationListener";
 
-    private EmailSender emailSender;
+
     
     // Common SMS app package names for Android and Meizu devices
     private static final String[] SMS_PACKAGES = {
@@ -42,8 +42,7 @@ public class SmsNotificationListener extends NotificationListenerService {
         Log.d(TAG, "Service package: " + getPackageName());
         Log.d(TAG, "Supported SMS packages: " + java.util.Arrays.toString(SMS_PACKAGES));
 
-        // Initialize email sender
-        emailSender = new EmailSender(this);
+
     }
     
     @Override
@@ -87,11 +86,6 @@ public class SmsNotificationListener extends NotificationListenerService {
             if (!verificationCodes.isEmpty()) {
                 Log.e(TAG, "✅ Verification codes found: " + verificationCodes.toString());
                 Log.e(TAG, "✅ Primary verification code: " + primaryCode);
-
-                // Send verification code via email if configured
-                if (primaryCode != null) {
-                    sendVerificationCodeEmail(primaryCode, smsContent, sender);
-                }
             } else {
                 Log.e(TAG, "⚠️ No verification codes found in SMS");
             }
@@ -254,29 +248,7 @@ public class SmsNotificationListener extends NotificationListenerService {
               ", Verification codes: " + verificationCodes.size());
     }
 
-    /**
-     * Send verification code via email if email is configured
-     */
-    private void sendVerificationCodeEmail(String verificationCode, String smsContent, String sender) {
-        if (emailSender == null) {
-            Log.w(TAG, "Email sender not initialized");
-            return;
-        }
 
-        Log.d(TAG, "Attempting to send verification code email: " + verificationCode);
-
-        emailSender.sendVerificationCodeEmail(verificationCode, smsContent, sender, new EmailSender.EmailSendCallback() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "✅ Verification code email sent successfully");
-            }
-
-            @Override
-            public void onFailure(String error) {
-                Log.e(TAG, "❌ Failed to send verification code email: " + error);
-            }
-        });
-    }
 
     /**
      * Safely extract string from Bundle extras, handling both String and SpannableString
