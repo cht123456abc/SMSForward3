@@ -21,3 +21,8 @@ keystore.properties
 
 # Release files
 release_*/
+
+# Development and release documentation - DO NOT COMMIT
+create_keystore.sh
+README_RELEASE.md
+RELEASE_GUIDE.md
