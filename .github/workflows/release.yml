@@ -132,7 +132,7 @@ jobs:
         EOF
         
     - name: Create Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.version.outputs.VERSION }}
         name: SMS Forward ${{ steps.version.outputs.VERSION }}
