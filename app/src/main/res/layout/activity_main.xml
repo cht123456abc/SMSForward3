@@ -130,6 +130,8 @@
                         android:gravity="center"
                         android:textAlignment="center"
                         app:icon="@drawable/ic_email_24dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
                 </LinearLayout>
