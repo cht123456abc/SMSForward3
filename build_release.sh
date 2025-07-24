@@ -5,6 +5,17 @@
 
 echo "🚀 Starting SMS Forward App Release Build..."
 
+# Set up Java environment
+ANDROID_STUDIO_JDK="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+if [ -d "$ANDROID_STUDIO_JDK" ]; then
+    export JAVA_HOME="$ANDROID_STUDIO_JDK"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    print_status "Java environment set up using Android Studio JDK"
+else
+    print_error "Android Studio JDK not found. Please run ./setup_java_env.sh first"
+    exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
