@@ -30,6 +30,7 @@ public class EmailConfigActivity extends AppCompatActivity {
     
     private EmailSettingsManager settingsManager;
     private EmailSender emailSender;
+    private boolean isLoadingConfiguration = false;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,23 +70,28 @@ public class EmailConfigActivity extends AppCompatActivity {
      * Load existing email configuration
      */
     private void loadEmailConfiguration() {
+        isLoadingConfiguration = true;
+
         EmailConfig config = settingsManager.loadEmailConfig();
-        
+        Log.d(TAG, "Loading email configuration: enabled=" + config.isEnabled());
+
         emailEnabledSwitch.setChecked(config.isEnabled());
-        
+
         if (!TextUtils.isEmpty(config.getSenderEmail())) {
             senderEmailEditText.setText(config.getSenderEmail());
         }
-        
+
         if (!TextUtils.isEmpty(config.getSenderPassword())) {
             senderPasswordEditText.setText(config.getSenderPassword());
         }
-        
+
         if (!TextUtils.isEmpty(config.getRecipientEmail())) {
             recipientEmailEditText.setText(config.getRecipientEmail());
         }
-        
+
         updateFormVisibility();
+
+        isLoadingConfiguration = false;
     }
     
     /**
@@ -93,9 +99,12 @@ public class EmailConfigActivity extends AppCompatActivity {
      */
     private void setupEventListeners() {
         emailEnabledSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            Log.d(TAG, "Email enabled switch changed to: " + isChecked);
             updateFormVisibility();
+            // 立即保存开关状态
+            saveToggleState(isChecked);
         });
-        
+
         testEmailButton.setOnClickListener(v -> testEmailConfiguration());
         saveConfigButton.setOnClickListener(v -> saveEmailConfiguration());
         backButton.setOnClickListener(v -> finish());
@@ -107,10 +116,37 @@ public class EmailConfigActivity extends AppCompatActivity {
     private void updateFormVisibility() {
         boolean enabled = emailEnabledSwitch.isChecked();
         configFormLayout.setVisibility(enabled ? View.VISIBLE : View.GONE);
-        actionButtonsCard.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        // 保持操作按钮可见，但调整保存按钮文本
+        actionButtonsCard.setVisibility(View.VISIBLE);
         saveConfigButton.setText(enabled ? getString(R.string.save_configuration) : getString(R.string.save_settings));
     }
-    
+
+    /**
+     * 立即保存开关状态（当用户手动切换开关时）
+     */
+    private void saveToggleState(boolean enabled) {
+        // 如果正在加载配置，不要触发保存操作
+        if (isLoadingConfiguration) {
+            Log.d(TAG, "Skipping toggle state save during configuration loading");
+            return;
+        }
+
+        Log.d(TAG, "Saving toggle state immediately: " + enabled);
+
+        // 使用EmailSettingsManager的setEmailEnabled方法直接保存开关状态
+        boolean success = settingsManager.setEmailEnabled(enabled);
+
+        if (success) {
+            Log.d(TAG, "Toggle state saved successfully: " + enabled);
+            // 显示简短的状态提示
+            String message = enabled ? "邮件转发已开启" : "邮件转发已关闭";
+            showToast(message);
+        } else {
+            Log.e(TAG, "Failed to save toggle state: " + enabled);
+            showToast("保存状态失败");
+        }
+    }
+
     /**
      * Test email configuration
      */
@@ -151,25 +187,26 @@ public class EmailConfigActivity extends AppCompatActivity {
      */
     private void saveEmailConfiguration() {
         EmailConfig config;
-        
+
         if (emailEnabledSwitch.isChecked()) {
+            // When enabled, get config from form and validate
             config = getEmailConfigFromForm();
-            
+
             if (!config.isValid()) {
                 showToast(getString(R.string.toast_fill_email_fields));
                 return;
             }
         } else {
-            // If disabled, just save the enabled state
-            config = settingsManager.loadEmailConfig();
+            // When disabled, preserve existing form data but set enabled = false
+            config = getEmailConfigFromForm();
             config.setEnabled(false);
         }
-        
+
         boolean success = settingsManager.saveEmailConfig(config);
-        
+
         if (success) {
             showToast(getString(R.string.toast_config_saved));
-            Log.d(TAG, "Email configuration saved");
+            Log.d(TAG, "Email configuration saved with enabled state: " + config.isEnabled());
             // 不再自动返回页面，只显示成功提示
         } else {
             showToast(getString(R.string.toast_config_save_failed));
