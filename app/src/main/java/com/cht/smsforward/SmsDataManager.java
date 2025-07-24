@@ -112,10 +112,18 @@ public class SmsDataManager {
     }
     
     /**
-     * 添加新的SMS消息
+     * 添加新的SMS消息（带重复检测）
      */
     public void addSmsMessage(SmsMessage newMessage) {
         List<SmsMessage> messages = loadSmsMessages();
+
+        // 检查是否已存在相同的消息（基于内容、发送者和时间戳）
+        for (SmsMessage existingMessage : messages) {
+            if (isDuplicateMessage(existingMessage, newMessage)) {
+                Log.d(TAG, "Duplicate message detected - skipping: " + newMessage.getSender() + " at " + newMessage.getFormattedTimestamp());
+                return; // 跳过重复消息
+            }
+        }
 
         // 找到正确的插入位置（按时间戳降序）
         int insertIndex = 0;
@@ -129,6 +137,21 @@ public class SmsDataManager {
 
         messages.add(insertIndex, newMessage);
         saveSmsMessages(messages);
+        Log.d(TAG, "New SMS message added - Sender: " + newMessage.getSender() + " at " + newMessage.getFormattedTimestamp());
+    }
+
+    /**
+     * 检查两个消息是否重复
+     */
+    private boolean isDuplicateMessage(SmsMessage existing, SmsMessage newMessage) {
+        // 基于内容、发送者和时间戳进行重复检测
+        // 允许时间戳有小的差异（1秒内）以处理系统时间差异
+        long timeDiff = Math.abs(existing.getTimestamp() - newMessage.getTimestamp());
+        boolean sameContent = existing.getContent().equals(newMessage.getContent());
+        boolean sameSender = existing.getSender().equals(newMessage.getSender());
+        boolean similarTime = timeDiff <= 1000; // 1秒内认为是相同时间
+
+        return sameContent && sameSender && similarTime;
     }
     
     /**

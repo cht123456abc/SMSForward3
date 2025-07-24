@@ -97,14 +97,10 @@ public class SmsNotificationListener extends NotificationListenerService {
                 Log.e(TAG, "⚠️ No verification codes found in SMS");
             }
 
-            // Send SMS content to MainActivity for display
-            Log.e(TAG, "📤 Broadcasting SMS content to MainActivity");
-            broadcastSmsContent(smsContent, sender, verificationCodes, primaryCode, sbn);
-
-            // Always handle direct processing to ensure reliability
-            Log.e(TAG, "🔄 Processing message directly for reliability");
-            processMessageDirectly(smsContent, sender, sbn.getPackageName(), sbn.getPostTime(),
-                                 verificationCodes, primaryCode);
+            // Process message with single streamlined path
+            Log.e(TAG, "🔄 Processing SMS message");
+            processSmsMessage(smsContent, sender, sbn.getPackageName(), sbn.getPostTime(),
+                            verificationCodes, primaryCode);
         } else {
             Log.e(TAG, "❌ No SMS content could be extracted from notification");
         }
@@ -233,16 +229,16 @@ public class SmsNotificationListener extends NotificationListenerService {
     }
     
     /**
-     * Broadcast SMS content to MainActivity
+     * Broadcast SMS content to MainActivity for UI update
      */
     private void broadcastSmsContent(String content, String sender, List<String> verificationCodes,
-                                   String primaryCode, StatusBarNotification sbn) {
+                                   String primaryCode, String packageName, long timestamp) {
         // Create intent to broadcast SMS content
         Intent intent = new Intent("com.cht.smsforward.SMS_RECEIVED");
         intent.putExtra("sms_content", content);
         intent.putExtra("sender", sender);
-        intent.putExtra("package_name", sbn.getPackageName());
-        intent.putExtra("timestamp", sbn.getPostTime());
+        intent.putExtra("package_name", packageName);
+        intent.putExtra("timestamp", timestamp);
 
         // Add verification code information
         if (!verificationCodes.isEmpty()) {
@@ -250,13 +246,10 @@ public class SmsNotificationListener extends NotificationListenerService {
             intent.putExtra("primary_verification_code", primaryCode);
         }
 
-        // Send local broadcast using LocalBroadcastManager
+        // Send local broadcast only (simplified approach)
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 
-        // Also try regular broadcast as fallback
-        sendBroadcast(intent);
-
-        Log.d(TAG, "SMS content broadcasted (local + regular) - Sender: " + sender + ", Content: " + content +
+        Log.d(TAG, "SMS content broadcasted to MainActivity - Sender: " + sender +
               ", Verification codes: " + verificationCodes.size());
     }
 
@@ -292,22 +285,25 @@ public class SmsNotificationListener extends NotificationListenerService {
 
 
     /**
-     * Process message directly when app is backgrounded
+     * Process SMS message with single streamlined path
      */
-    private void processMessageDirectly(String content, String sender, String packageName,
-                                      long timestamp, List<String> verificationCodes, String primaryCode) {
+    private void processSmsMessage(String content, String sender, String packageName,
+                                 long timestamp, List<String> verificationCodes, String primaryCode) {
         try {
             // Create SMS message object
             List<String> codes = verificationCodes != null ? verificationCodes : new ArrayList<>();
             SmsMessage smsMessage = new SmsMessage(content, sender, packageName, timestamp, codes, primaryCode);
 
-            // Save to persistent storage
+            // Save to persistent storage (with duplicate detection)
             smsDataManager.addSmsMessage(smsMessage);
-            Log.d(TAG, "Message saved directly to storage");
+            Log.d(TAG, "SMS message processed and saved");
 
             // Send verification code email if available
             if (primaryCode != null) {
-                Log.d(TAG, "Sending verification code email directly: " + primaryCode);
+                Log.d(TAG, "Sending verification code email: " + primaryCode);
+                smsMessage.setEmailForwardStatus(EmailForwardStatus.SENDING);
+                smsDataManager.updateSmsMessage(smsMessage);
+
                 emailSender.sendVerificationCodeEmail(
                     primaryCode,
                     content,
@@ -315,14 +311,14 @@ public class SmsNotificationListener extends NotificationListenerService {
                     new EmailSender.EmailSendCallback() {
                         @Override
                         public void onSuccess() {
-                            Log.d(TAG, "Verification code email sent successfully (direct processing)");
+                            Log.d(TAG, "Verification code email sent successfully");
                             smsMessage.setEmailForwardStatus(EmailForwardStatus.SUCCESS);
                             smsDataManager.updateSmsMessage(smsMessage);
                         }
 
                         @Override
                         public void onFailure(String error) {
-                            Log.e(TAG, "Failed to send verification code email (direct processing): " + error);
+                            Log.e(TAG, "Failed to send verification code email: " + error);
                             smsMessage.setEmailForwardStatus(EmailForwardStatus.FAILED);
                             smsDataManager.updateSmsMessage(smsMessage);
                         }
@@ -330,11 +326,11 @@ public class SmsNotificationListener extends NotificationListenerService {
                 );
             }
 
-            // Notify MainActivity about the processed message
-            notifyMainActivityOfNewMessage(smsMessage);
+            // Notify MainActivity to update UI
+            broadcastSmsContent(content, sender, verificationCodes, primaryCode, packageName, timestamp);
 
         } catch (Exception e) {
-            Log.e(TAG, "Error in direct message processing", e);
+            Log.e(TAG, "Error processing SMS message", e);
 
             // Fallback: queue the message for later processing
             messageQueue.queueMessage(content, sender, packageName, timestamp, verificationCodes, primaryCode);
@@ -342,14 +338,5 @@ public class SmsNotificationListener extends NotificationListenerService {
         }
     }
 
-    /**
-     * Notify MainActivity about new message processed
-     */
-    private void notifyMainActivityOfNewMessage(SmsMessage smsMessage) {
-        Intent intent = new Intent("com.cht.smsforward.NEW_MESSAGE_PROCESSED");
-        intent.putExtra("message_timestamp", smsMessage.getTimestamp());
-        intent.putExtra("sender", smsMessage.getSender());
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        Log.d(TAG, "Notified MainActivity of new processed message");
-    }
+
 }

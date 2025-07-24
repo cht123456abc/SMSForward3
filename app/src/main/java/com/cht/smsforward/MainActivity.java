@@ -5,7 +5,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -31,7 +30,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private static final String SMS_RECEIVED_ACTION = "com.cht.smsforward.SMS_RECEIVED";
-    private static final String NEW_MESSAGE_PROCESSED_ACTION = "com.cht.smsforward.NEW_MESSAGE_PROCESSED";
 
     private TextView statusText;
     private Button permissionButton;
@@ -40,9 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView emptyStateText;
     private SmsAdapter smsAdapter;
     private SmsBroadcastReceiver smsBroadcastReceiver;
-    private BackgroundMessageReceiver backgroundMessageReceiver;
     private SmsDataManager smsDataManager;
-    private EmailSender emailSender;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,9 +57,6 @@ public class MainActivity extends AppCompatActivity {
         // Initialize data manager
         smsDataManager = new SmsDataManager(this);
 
-        // Initialize email sender
-        emailSender = new EmailSender(this);
-
         // Initialize UI components
         initializeUI();
 
@@ -73,14 +66,8 @@ public class MainActivity extends AppCompatActivity {
         // Set up SMS broadcast receiver
         setupSmsBroadcastReceiver();
 
-        // Set up background message receiver
-        setupBackgroundMessageReceiver();
-
         // Check notification access permission
         checkNotificationAccess();
-
-        // Start SMS processing service
-        startSmsProcessingService();
     }
 
     @Override
@@ -89,29 +76,14 @@ public class MainActivity extends AppCompatActivity {
         // Re-check permission when returning from Settings
         checkNotificationAccess();
 
-        // Re-register broadcast receiver
+        // Re-register broadcast receiver (LocalBroadcastManager only)
         if (smsBroadcastReceiver != null) {
             IntentFilter filter = new IntentFilter(SMS_RECEIVED_ACTION);
-
-            // Register with LocalBroadcastManager
             LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver, filter);
-
-            // Also register regular receiver as fallback
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(smsBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(smsBroadcastReceiver, filter);
-            }
         }
 
-        // Re-register background message receiver
-        if (backgroundMessageReceiver != null) {
-            IntentFilter bgFilter = new IntentFilter(NEW_MESSAGE_PROCESSED_ACTION);
-            LocalBroadcastManager.getInstance(this).registerReceiver(backgroundMessageReceiver, bgFilter);
-        }
-
-        // Sync with any messages processed while app was backgrounded
-        syncBackgroundProcessedMessages();
+        // Reload messages from storage to sync with any background processing
+        loadSavedMessages();
     }
 
     @Override
@@ -120,23 +92,10 @@ public class MainActivity extends AppCompatActivity {
         // Unregister broadcast receiver to avoid memory leaks
         if (smsBroadcastReceiver != null) {
             try {
-                // Unregister from LocalBroadcastManager
                 LocalBroadcastManager.getInstance(this).unregisterReceiver(smsBroadcastReceiver);
-
-                // Unregister regular receiver
-                unregisterReceiver(smsBroadcastReceiver);
             } catch (IllegalArgumentException e) {
                 // Receiver was not registered
                 Log.d(TAG, "Broadcast receiver was not registered");
-            }
-        }
-
-        // Unregister background message receiver
-        if (backgroundMessageReceiver != null) {
-            try {
-                LocalBroadcastManager.getInstance(this).unregisterReceiver(backgroundMessageReceiver);
-            } catch (IllegalArgumentException e) {
-                Log.d(TAG, "Background message receiver was not registered");
             }
         }
     }
@@ -184,17 +143,10 @@ public class MainActivity extends AppCompatActivity {
         smsBroadcastReceiver = new SmsBroadcastReceiver();
         IntentFilter filter = new IntentFilter(SMS_RECEIVED_ACTION);
 
-        // Register with LocalBroadcastManager (more reliable for internal broadcasts)
+        // Register with LocalBroadcastManager only (simplified approach)
         LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver, filter);
 
-        // Also register regular receiver as fallback
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(smsBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(smsBroadcastReceiver, filter);
-        }
-
-        Log.e(TAG, "SMS broadcast receiver registered (local + regular)");
+        Log.e(TAG, "SMS broadcast receiver registered (LocalBroadcastManager only)");
     }
 
     /**
@@ -292,46 +244,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Handle received SMS data from NotificationListenerService
+     * Handle UI notification of new SMS (reload from storage)
      */
-    private void handleReceivedSms(Intent intent) {
-        String content = intent.getStringExtra("sms_content");
-        String sender = intent.getStringExtra("sender");
-        String packageName = intent.getStringExtra("package_name");
-        long timestamp = intent.getLongExtra("timestamp", System.currentTimeMillis());
+    private void handleNewSmsNotification(Intent intent) {
+        // Simply reload messages from storage to sync UI
+        // The actual processing and storage is handled by SmsNotificationListener
+        loadSavedMessages();
 
-        // Get verification codes
-        ArrayList<String> verificationCodes = intent.getStringArrayListExtra("verification_codes");
+        // Show toast for verification codes if available
         String primaryCode = intent.getStringExtra("primary_verification_code");
+        ArrayList<String> verificationCodes = intent.getStringArrayListExtra("verification_codes");
+        List<String> codes = verificationCodes != null ? verificationCodes : new ArrayList<>();
 
-        if (content != null && sender != null) {
-            // Create SMS message object
-            List<String> codes = verificationCodes != null ? verificationCodes : new ArrayList<>();
-            SmsMessage smsMessage = new SmsMessage(content, sender, packageName, timestamp, codes, primaryCode);
-
-            // Add to adapter and update UI
-            smsAdapter.addSmsMessage(smsMessage);
-            updateEmptyState();
-
-            // Save to persistent storage
-            smsDataManager.addSmsMessage(smsMessage);
-
-            // Send verification code email if available
-            if (primaryCode != null) {
-                sendVerificationCodeEmail(smsMessage, primaryCode);
-            }
-
-            // Show toast for verification codes
-            if (primaryCode != null) {
-                showToast(getString(R.string.toast_new_verification_code, primaryCode));
-            } else if (!codes.isEmpty()) {
-                showToast(getString(R.string.toast_new_sms_with_codes));
-            } else {
-                showToast(getString(R.string.toast_new_sms));
-            }
-
-            Log.d(TAG, "SMS added to UI - Sender: " + sender + ", Codes: " + codes.size());
+        if (primaryCode != null) {
+            showToast(getString(R.string.toast_new_verification_code, primaryCode));
+        } else if (!codes.isEmpty()) {
+            showToast(getString(R.string.toast_new_sms_with_codes));
+        } else {
+            showToast(getString(R.string.toast_new_sms));
         }
+
+        Log.d(TAG, "UI updated for new SMS notification");
     }
 
 
@@ -362,45 +295,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    /**
-     * Send verification code via email and update SMS message status
-     */
-    private void sendVerificationCodeEmail(SmsMessage smsMessage, String verificationCode) {
-        if (emailSender == null) {
-            Log.w(TAG, "Email sender not initialized");
-            return;
-        }
 
-        // Update status to sending
-        smsMessage.setEmailSending();
-        smsAdapter.notifyDataSetChanged();
-        smsDataManager.updateSmsMessage(smsMessage);
-
-        Log.d(TAG, "Attempting to send verification code email: " + verificationCode);
-
-        emailSender.sendVerificationCodeEmail(verificationCode, smsMessage.getContent(),
-                smsMessage.getSender(), new EmailSender.EmailSendCallback() {
-            @Override
-            public void onSuccess() {
-                Log.d(TAG, "✅ Verification code email sent successfully");
-                runOnUiThread(() -> {
-                    smsMessage.setEmailSent();
-                    smsAdapter.notifyDataSetChanged();
-                    smsDataManager.updateSmsMessage(smsMessage);
-                });
-            }
-
-            @Override
-            public void onFailure(String error) {
-                Log.e(TAG, "❌ Failed to send verification code email: " + error);
-                runOnUiThread(() -> {
-                    smsMessage.setEmailFailed(error);
-                    smsAdapter.notifyDataSetChanged();
-                    smsDataManager.updateSmsMessage(smsMessage);
-                });
-            }
-        });
-    }
 
     /**
      * Show toast message
@@ -418,69 +313,15 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "=== BROADCAST RECEIVED ===");
             Log.e(TAG, "Intent action: " + intent.getAction());
             Log.e(TAG, "Expected action: " + SMS_RECEIVED_ACTION);
-            System.out.println("=== BROADCAST RECEIVED ===");
 
             if (SMS_RECEIVED_ACTION.equals(intent.getAction())) {
-                Log.e(TAG, "SMS broadcast received - processing");
-                handleReceivedSms(intent);
+                Log.e(TAG, "SMS broadcast received - updating UI");
+                handleNewSmsNotification(intent);
             } else {
                 Log.e(TAG, "Broadcast action mismatch - ignoring");
             }
         }
     }
 
-    /**
-     * Set up background message receiver for messages processed while app was backgrounded
-     */
-    private void setupBackgroundMessageReceiver() {
-        backgroundMessageReceiver = new BackgroundMessageReceiver();
-        IntentFilter filter = new IntentFilter(NEW_MESSAGE_PROCESSED_ACTION);
-        LocalBroadcastManager.getInstance(this).registerReceiver(backgroundMessageReceiver, filter);
-        Log.d(TAG, "Background message receiver registered");
-    }
 
-    /**
-     * Start SMS processing service for background handling
-     */
-    private void startSmsProcessingService() {
-        try {
-            Intent serviceIntent = new Intent(this, SmsProcessingService.class);
-            startService(serviceIntent);
-            Log.d(TAG, "SMS Processing Service started from MainActivity");
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to start SMS Processing Service from MainActivity", e);
-        }
-    }
-
-    /**
-     * Sync with messages that were processed while app was backgrounded
-     */
-    private void syncBackgroundProcessedMessages() {
-        // Reload all messages from storage to catch any that were processed in background
-        List<SmsMessage> allMessages = smsDataManager.loadSmsMessages();
-
-        // Clear current adapter and reload with all messages
-        smsAdapter.clearMessages();
-        for (SmsMessage message : allMessages) {
-            smsAdapter.addSmsMessage(message);
-        }
-        updateEmptyState();
-
-        Log.d(TAG, "Synced with " + allMessages.size() + " messages from background processing");
-    }
-
-    /**
-     * Broadcast receiver for messages processed in background
-     */
-    private class BackgroundMessageReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "=== BACKGROUND MESSAGE PROCESSED ===");
-
-            if (NEW_MESSAGE_PROCESSED_ACTION.equals(intent.getAction())) {
-                // A message was processed in background, sync the UI
-                syncBackgroundProcessedMessages();
-            }
-        }
-    }
 }
