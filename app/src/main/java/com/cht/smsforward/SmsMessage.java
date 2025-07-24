@@ -2,6 +2,7 @@ package com.cht.smsforward;
 
 import android.text.SpannableString;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -10,7 +11,9 @@ import java.util.Locale;
 /**
  * Data model representing an SMS message with verification code information
  */
-public class SmsMessage {
+public class SmsMessage implements Serializable {
+
+    private static final long serialVersionUID = 1L;
     
     private String content;
     private String sender;

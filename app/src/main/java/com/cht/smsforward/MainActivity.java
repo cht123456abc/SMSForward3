@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private static final String SMS_RECEIVED_ACTION = "com.cht.smsforward.SMS_RECEIVED";
+    private static final String NEW_MESSAGE_PROCESSED_ACTION = "com.cht.smsforward.NEW_MESSAGE_PROCESSED";
 
     private TextView statusText;
     private Button permissionButton;
@@ -39,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView emptyStateText;
     private SmsAdapter smsAdapter;
     private SmsBroadcastReceiver smsBroadcastReceiver;
+    private BackgroundMessageReceiver backgroundMessageReceiver;
     private SmsDataManager smsDataManager;
     private EmailSender emailSender;
 
@@ -71,8 +73,14 @@ public class MainActivity extends AppCompatActivity {
         // Set up SMS broadcast receiver
         setupSmsBroadcastReceiver();
 
+        // Set up background message receiver
+        setupBackgroundMessageReceiver();
+
         // Check notification access permission
         checkNotificationAccess();
+
+        // Start SMS processing service
+        startSmsProcessingService();
     }
 
     @Override
@@ -95,6 +103,15 @@ public class MainActivity extends AppCompatActivity {
                 registerReceiver(smsBroadcastReceiver, filter);
             }
         }
+
+        // Re-register background message receiver
+        if (backgroundMessageReceiver != null) {
+            IntentFilter bgFilter = new IntentFilter(NEW_MESSAGE_PROCESSED_ACTION);
+            LocalBroadcastManager.getInstance(this).registerReceiver(backgroundMessageReceiver, bgFilter);
+        }
+
+        // Sync with any messages processed while app was backgrounded
+        syncBackgroundProcessedMessages();
     }
 
     @Override
@@ -111,6 +128,15 @@ public class MainActivity extends AppCompatActivity {
             } catch (IllegalArgumentException e) {
                 // Receiver was not registered
                 Log.d(TAG, "Broadcast receiver was not registered");
+            }
+        }
+
+        // Unregister background message receiver
+        if (backgroundMessageReceiver != null) {
+            try {
+                LocalBroadcastManager.getInstance(this).unregisterReceiver(backgroundMessageReceiver);
+            } catch (IllegalArgumentException e) {
+                Log.d(TAG, "Background message receiver was not registered");
             }
         }
     }
@@ -399,6 +425,61 @@ public class MainActivity extends AppCompatActivity {
                 handleReceivedSms(intent);
             } else {
                 Log.e(TAG, "Broadcast action mismatch - ignoring");
+            }
+        }
+    }
+
+    /**
+     * Set up background message receiver for messages processed while app was backgrounded
+     */
+    private void setupBackgroundMessageReceiver() {
+        backgroundMessageReceiver = new BackgroundMessageReceiver();
+        IntentFilter filter = new IntentFilter(NEW_MESSAGE_PROCESSED_ACTION);
+        LocalBroadcastManager.getInstance(this).registerReceiver(backgroundMessageReceiver, filter);
+        Log.d(TAG, "Background message receiver registered");
+    }
+
+    /**
+     * Start SMS processing service for background handling
+     */
+    private void startSmsProcessingService() {
+        try {
+            Intent serviceIntent = new Intent(this, SmsProcessingService.class);
+            startService(serviceIntent);
+            Log.d(TAG, "SMS Processing Service started from MainActivity");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start SMS Processing Service from MainActivity", e);
+        }
+    }
+
+    /**
+     * Sync with messages that were processed while app was backgrounded
+     */
+    private void syncBackgroundProcessedMessages() {
+        // Reload all messages from storage to catch any that were processed in background
+        List<SmsMessage> allMessages = smsDataManager.loadSmsMessages();
+
+        // Clear current adapter and reload with all messages
+        smsAdapter.clearMessages();
+        for (SmsMessage message : allMessages) {
+            smsAdapter.addSmsMessage(message);
+        }
+        updateEmptyState();
+
+        Log.d(TAG, "Synced with " + allMessages.size() + " messages from background processing");
+    }
+
+    /**
+     * Broadcast receiver for messages processed in background
+     */
+    private class BackgroundMessageReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d(TAG, "=== BACKGROUND MESSAGE PROCESSED ===");
+
+            if (NEW_MESSAGE_PROCESSED_ACTION.equals(intent.getAction())) {
+                // A message was processed in background, sync the UI
+                syncBackgroundProcessedMessages();
             }
         }
     }

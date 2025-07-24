@@ -1,6 +1,8 @@
 package com.cht.smsforward;
 
+import android.app.ActivityManager;
 import android.app.Notification;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
@@ -21,8 +23,10 @@ public class SmsNotificationListener extends NotificationListenerService {
 
     private static final String TAG = "SmsNotificationListener";
 
+    private SmsDataManager smsDataManager;
+    private EmailSender emailSender;
+    private MessageQueue messageQueue;
 
-    
     // Common SMS app package names for Android and Meizu devices
     private static final String[] SMS_PACKAGES = {
         "com.android.mms",           // Default Android Messages
@@ -42,7 +46,10 @@ public class SmsNotificationListener extends NotificationListenerService {
         Log.d(TAG, "Service package: " + getPackageName());
         Log.d(TAG, "Supported SMS packages: " + java.util.Arrays.toString(SMS_PACKAGES));
 
-
+        // Initialize components for direct processing
+        smsDataManager = new SmsDataManager(this);
+        emailSender = new EmailSender(this);
+        messageQueue = new MessageQueue(this);
     }
     
     @Override
@@ -93,6 +100,11 @@ public class SmsNotificationListener extends NotificationListenerService {
             // Send SMS content to MainActivity for display
             Log.e(TAG, "📤 Broadcasting SMS content to MainActivity");
             broadcastSmsContent(smsContent, sender, verificationCodes, primaryCode, sbn);
+
+            // Always handle direct processing to ensure reliability
+            Log.e(TAG, "🔄 Processing message directly for reliability");
+            processMessageDirectly(smsContent, sender, sbn.getPackageName(), sbn.getPostTime(),
+                                 verificationCodes, primaryCode);
         } else {
             Log.e(TAG, "❌ No SMS content could be extracted from notification");
         }
@@ -273,5 +285,71 @@ public class SmsNotificationListener extends NotificationListenerService {
             Log.e(TAG, "Error extracting string for key " + key, e);
             return null;
         }
+    }
+
+
+
+
+
+    /**
+     * Process message directly when app is backgrounded
+     */
+    private void processMessageDirectly(String content, String sender, String packageName,
+                                      long timestamp, List<String> verificationCodes, String primaryCode) {
+        try {
+            // Create SMS message object
+            List<String> codes = verificationCodes != null ? verificationCodes : new ArrayList<>();
+            SmsMessage smsMessage = new SmsMessage(content, sender, packageName, timestamp, codes, primaryCode);
+
+            // Save to persistent storage
+            smsDataManager.addSmsMessage(smsMessage);
+            Log.d(TAG, "Message saved directly to storage");
+
+            // Send verification code email if available
+            if (primaryCode != null) {
+                Log.d(TAG, "Sending verification code email directly: " + primaryCode);
+                emailSender.sendVerificationCodeEmail(
+                    primaryCode,
+                    content,
+                    sender,
+                    new EmailSender.EmailSendCallback() {
+                        @Override
+                        public void onSuccess() {
+                            Log.d(TAG, "Verification code email sent successfully (direct processing)");
+                            smsMessage.setEmailForwardStatus(EmailForwardStatus.SUCCESS);
+                            smsDataManager.updateSmsMessage(smsMessage);
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                            Log.e(TAG, "Failed to send verification code email (direct processing): " + error);
+                            smsMessage.setEmailForwardStatus(EmailForwardStatus.FAILED);
+                            smsDataManager.updateSmsMessage(smsMessage);
+                        }
+                    }
+                );
+            }
+
+            // Notify MainActivity about the processed message
+            notifyMainActivityOfNewMessage(smsMessage);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in direct message processing", e);
+
+            // Fallback: queue the message for later processing
+            messageQueue.queueMessage(content, sender, packageName, timestamp, verificationCodes, primaryCode);
+            Log.d(TAG, "Message queued for later processing due to error");
+        }
+    }
+
+    /**
+     * Notify MainActivity about new message processed
+     */
+    private void notifyMainActivityOfNewMessage(SmsMessage smsMessage) {
+        Intent intent = new Intent("com.cht.smsforward.NEW_MESSAGE_PROCESSED");
+        intent.putExtra("message_timestamp", smsMessage.getTimestamp());
+        intent.putExtra("sender", smsMessage.getSender());
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        Log.d(TAG, "Notified MainActivity of new processed message");
     }
 }
