@@ -58,19 +58,44 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="@string/notification_access_status"
+                            android:text="@string/function_permission_status"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="?attr/colorOnSurfaceVariant"
-                            android:layout_marginBottom="8dp" />
+                            android:layout_marginBottom="12dp" />
 
-                        <TextView
-                            android:id="@+id/statusText"
+                        <!-- Notification Access Status -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Checking notification access..."
-                            android:textSize="16sp"
-                            android:textColor="?attr/colorOnSurface" />
+                            android:orientation="vertical"
+                            android:layout_marginBottom="8dp">
+
+                            <TextView
+                                android:id="@+id/notificationStatusText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="检查通知访问权限中..."
+                                android:textSize="14sp"
+                                android:textColor="?attr/colorOnSurface" />
+
+                        </LinearLayout>
+
+                        <!-- Email Forwarding Status -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/emailStatusText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="检查邮件转发状态中..."
+                                android:textSize="14sp"
+                                android:textColor="?attr/colorOnSurface" />
+
+                        </LinearLayout>
 
                     </LinearLayout>
 

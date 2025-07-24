@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">验证码转发工具</string>
     <string name="app_title">短信验证码转发工具</string>
-    <string name="notification_access_status">通知访问状态</string>
     <string name="notification_access_enabled">✓ 通知访问已启用 - 准备接收短信</string>
     <string name="notification_access_required">⚠ 需要通知访问权限</string>
     <string name="enable_notification_access">启用通知访问</string>

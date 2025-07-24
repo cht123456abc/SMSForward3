@@ -1,9 +1,12 @@
 <resources>
     <string name="app_name">SMSForward</string>
     <string name="app_title">SMS Verification Code Forwarder</string>
-    <string name="notification_access_status">Notification Access Status</string>
-    <string name="notification_access_enabled">✓ Notification access enabled - Ready to receive SMS</string>
-    <string name="notification_access_required">⚠ Notification access required</string>
+    <string name="function_permission_status">功能权限状态</string>
+    <string name="email_forwarding_status">邮件转发功能</string>
+    <string name="notification_access_enabled">✓ 通知访问已启用</string>
+    <string name="notification_access_required">⚠ 需要启用通知访问权限</string>
+    <string name="email_forwarding_enabled">✓ 邮件转发已启用 - 准备转发短信</string>
+    <string name="email_forwarding_disabled">⚠ 邮件转发未启用</string>
     <string name="enable_notification_access">Enable Notification Access</string>
     <string name="email_settings">Email Settings</string>
     <string name="recent_messages">Recent SMS Messages</string>

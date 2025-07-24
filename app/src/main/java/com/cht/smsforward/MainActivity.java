@@ -31,7 +31,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final String SMS_RECEIVED_ACTION = "com.cht.smsforward.SMS_RECEIVED";
 
-    private TextView statusText;
+    private TextView notificationStatusText;
+    private TextView emailStatusText;
     private Button permissionButton;
     private Button emailConfigButton;
     private RecyclerView smsRecyclerView;
@@ -39,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private SmsAdapter smsAdapter;
     private SmsBroadcastReceiver smsBroadcastReceiver;
     private SmsDataManager smsDataManager;
+    private EmailSettingsManager emailSettingsManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +59,9 @@ public class MainActivity extends AppCompatActivity {
         // Initialize data manager
         smsDataManager = new SmsDataManager(this);
 
+        // Initialize email settings manager
+        emailSettingsManager = new EmailSettingsManager(this);
+
         // Initialize UI components
         initializeUI();
 
@@ -66,15 +71,15 @@ public class MainActivity extends AppCompatActivity {
         // Set up SMS broadcast receiver
         setupSmsBroadcastReceiver();
 
-        // Check notification access permission
-        checkNotificationAccess();
+        // Check notification access permission and email forwarding status
+        checkAndUpdateAllStatus();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Re-check permission when returning from Settings
-        checkNotificationAccess();
+        // Re-check permissions and status when returning from Settings
+        checkAndUpdateAllStatus();
 
         // Re-register broadcast receiver (LocalBroadcastManager only)
         if (smsBroadcastReceiver != null) {
@@ -106,13 +111,16 @@ public class MainActivity extends AppCompatActivity {
     private void initializeUI() {
         // Initialize UI components
         Log.e(TAG, "Finding UI components");
-        statusText = findViewById(R.id.statusText);
+        notificationStatusText = findViewById(R.id.notificationStatusText);
+        emailStatusText = findViewById(R.id.emailStatusText);
         permissionButton = findViewById(R.id.permissionButton);
         emailConfigButton = findViewById(R.id.emailConfigButton);
         smsRecyclerView = findViewById(R.id.smsRecyclerView);
         emptyStateText = findViewById(R.id.emptyStateText);
 
-        Log.e(TAG, "UI components found - emailConfigButton: " + (emailConfigButton != null));
+        Log.e(TAG, "UI components found - emailConfigButton: " + (emailConfigButton != null) +
+              ", notificationStatusText: " + (notificationStatusText != null) +
+              ", emailStatusText: " + (emailStatusText != null));
 
         // Set up RecyclerView
         smsAdapter = new SmsAdapter(this);
@@ -150,19 +158,69 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Check if notification access permission is granted
+     * Check and update all status displays (notification access and email forwarding)
      */
-    private void checkNotificationAccess() {
-        boolean isEnabled = isNotificationServiceEnabled();
-        Log.d(TAG, "=== CHECKING NOTIFICATION ACCESS ===");
-        Log.d(TAG, "Notification access enabled: " + isEnabled);
+    private void checkAndUpdateAllStatus() {
+        Log.d(TAG, "=== CHECKING ALL STATUS ===");
 
-        if (isEnabled) {
-            Log.d(TAG, "Notification access is granted - service should be running");
-            updatePermissionStatus(true);
+        // Check notification access
+        boolean notificationEnabled = isNotificationServiceEnabled();
+        Log.d(TAG, "Notification access enabled: " + notificationEnabled);
+
+        // Check email forwarding status
+        EmailConfig emailConfig = emailSettingsManager.loadEmailConfig();
+        boolean emailEnabled = emailConfig.isEnabled();
+        boolean emailValid = emailConfig.isValid();
+        Log.d(TAG, "Email forwarding enabled: " + emailEnabled + ", valid: " + emailValid);
+
+        // Update UI for both statuses
+        updateNotificationStatus(notificationEnabled);
+        updateEmailForwardingStatus(emailEnabled, emailValid);
+
+        // Update empty state and permission button visibility
+        updateEmptyState();
+        updatePermissionButtonVisibility(notificationEnabled);
+    }
+
+    /**
+     * Update notification access status display
+     */
+    private void updateNotificationStatus(boolean hasPermission) {
+        if (hasPermission) {
+            notificationStatusText.setText(getString(R.string.notification_access_enabled));
+            notificationStatusText.setTextColor(getResources().getColor(R.color.success_green));
+            Log.d(TAG, "Notification access status: enabled");
         } else {
-            Log.d(TAG, "Notification access is NOT granted - service will not work");
-            updatePermissionStatus(false);
+            notificationStatusText.setText(getString(R.string.notification_access_required));
+            notificationStatusText.setTextColor(getResources().getColor(R.color.error_red));
+            Log.d(TAG, "Notification access status: required");
+        }
+    }
+
+    /**
+     * Update email forwarding status display
+     */
+    private void updateEmailForwardingStatus(boolean enabled, boolean valid) {
+        if (enabled && valid) {
+            emailStatusText.setText(getString(R.string.email_forwarding_enabled));
+            emailStatusText.setTextColor(getResources().getColor(R.color.success_green));
+            Log.d(TAG, "Email forwarding status: enabled and ready");
+        } else {
+            emailStatusText.setText(getString(R.string.email_forwarding_disabled));
+            emailStatusText.setTextColor(getResources().getColor(R.color.error_red));
+            Log.d(TAG, "Email forwarding status: disabled or invalid");
+        }
+    }
+
+    /**
+     * Update permission button visibility
+     */
+    private void updatePermissionButtonVisibility(boolean hasNotificationPermission) {
+        if (hasNotificationPermission) {
+            permissionButton.setVisibility(View.GONE);
+        } else {
+            permissionButton.setVisibility(View.VISIBLE);
+            showToast(getString(R.string.toast_notification_access_required));
         }
     }
 
@@ -188,25 +246,7 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    /**
-     * Update UI based on permission status
-     */
-    private void updatePermissionStatus(boolean hasPermission) {
-        if (hasPermission) {
-            statusText.setText(getString(R.string.notification_access_enabled));
-            statusText.setTextColor(getResources().getColor(R.color.success_green));
-            permissionButton.setVisibility(View.GONE);
-            Log.d(TAG, "Ready to receive SMS notifications");
-        } else {
-            statusText.setText(getString(R.string.notification_access_required));
-            statusText.setTextColor(getResources().getColor(R.color.error_red));
-            permissionButton.setVisibility(View.VISIBLE);
-            showToast(getString(R.string.toast_notification_access_required));
-        }
 
-        // Update empty state visibility
-        updateEmptyState();
-    }
 
     /**
      * Update empty state visibility based on message count and permission status
