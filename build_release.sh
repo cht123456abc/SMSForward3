@@ -46,6 +46,23 @@ if [ ! -f "app/build.gradle" ]; then
     exit 1
 fi
 
+# Check if keystore.properties exists
+if [ ! -f "keystore.properties" ]; then
+    print_error "keystore.properties not found!"
+    print_status "Please run ./create_keystore.sh first to create a signing keystore"
+    exit 1
+fi
+
+# Verify keystore file exists
+KEYSTORE_FILE=$(grep "storeFile=" keystore.properties | cut -d'=' -f2)
+if [ ! -f "$KEYSTORE_FILE" ]; then
+    print_error "Keystore file not found: $KEYSTORE_FILE"
+    print_status "Please run ./create_keystore.sh to create the keystore"
+    exit 1
+fi
+
+print_success "Keystore configuration verified"
+
 # Step 1: Clean the project
 print_status "Cleaning project..."
 ./gradlew clean
@@ -78,6 +95,19 @@ if [ $? -eq 0 ]; then
         APK_SIZE=$(du -h "$APK_PATH" | cut -f1)
         print_success "APK location: $APK_PATH"
         print_success "APK size: $APK_SIZE"
+
+        # Verify APK signature
+        print_status "Verifying APK signature..."
+        if command -v apksigner &> /dev/null; then
+            apksigner verify "$APK_PATH"
+            if [ $? -eq 0 ]; then
+                print_success "APK signature verified successfully"
+            else
+                print_warning "APK signature verification failed"
+            fi
+        else
+            print_warning "apksigner not found, skipping signature verification"
+        fi
     fi
 else
     print_error "Failed to build release APK"
@@ -129,37 +159,118 @@ if [ -f "$AAB_PATH" ]; then
     cp "app-release.aab.sha256" "$RELEASE_DIR/"
 fi
 
+# Get version information
+VERSION_NAME=$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
+VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/.*\([0-9]\+\).*/\1/')
+
 # Copy release notes template
 cat > "$RELEASE_DIR/RELEASE_NOTES.md" << EOF
 # SMS Forward App Release Notes
 
-## Version: $(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
+## Version: $VERSION_NAME (Build $VERSION_CODE)
 ## Build Date: $(date)
+## Package: com.cht.smsforward
 
-### New Features
-- [ ] Feature 1
-- [ ] Feature 2
+### 📱 What's New in This Release
+- SMS转发功能优化
+- 邮件发送稳定性提升
+- 通知拦截兼容性改进
+- 用户界面优化
 
-### Bug Fixes
-- [ ] Fix 1
-- [ ] Fix 2
+### 🔧 Technical Details
+- Target SDK: 36 (Android 14+)
+- Minimum SDK: 34 (Android 14)
+- Architecture: Universal APK
 
-### Improvements
-- [ ] Improvement 1
-- [ ] Improvement 2
+### 📦 Installation Instructions
+1. 下载 APK 文件
+2. 在 Android 设置中启用"未知来源安装"
+3. 安装 APK 文件
+4. 授予必要的权限：
+   - 通知访问权限
+   - 短信读取权限（如需要）
+   - 网络访问权限
 
-### Known Issues
-- [ ] Issue 1
+### 🔐 Security Information
+- APK 已使用发布密钥签名
+- SHA256 校验和已提供用于验证文件完整性
+- 建议从官方 GitHub Releases 页面下载
 
-### Installation Instructions
-1. Download the APK file
-2. Enable "Install from unknown sources" in Android settings
-3. Install the APK
-4. Grant necessary permissions
-
-### Checksums
+### 📋 Checksums
 - APK SHA256: $APK_SHA256
 - AAB SHA256: $AAB_SHA256
+
+### 🐛 Known Issues
+- 部分设备可能需要手动配置通知权限
+- 首次启动时需要完成权限设置
+
+### 📞 Support
+如有问题，请在 GitHub Issues 页面报告：
+https://github.com/[your-username]/SMSForward3/issues
+EOF
+
+# Create installation guide
+cat > "$RELEASE_DIR/INSTALLATION_GUIDE.md" << EOF
+# SMS Forward App 安装指南
+
+## 系统要求
+- Android 14 (API 34) 或更高版本
+- 至少 50MB 可用存储空间
+
+## 安装步骤
+
+### 1. 下载应用
+从 GitHub Releases 页面下载最新的 APK 文件：
+\`app-release.apk\`
+
+### 2. 启用未知来源安装
+1. 打开 Android 设置
+2. 进入"安全"或"隐私"设置
+3. 启用"未知来源"或"安装未知应用"
+4. 或者在安装时选择"允许此来源"
+
+### 3. 安装应用
+1. 点击下载的 APK 文件
+2. 按照屏幕提示完成安装
+3. 如果出现安全警告，选择"仍要安装"
+
+### 4. 首次设置
+1. 打开 SMS Forward 应用
+2. 授予通知访问权限：
+   - 设置 → 通知 → 通知访问权限
+   - 找到 SMS Forward 并启用
+3. 配置邮件设置（如需要）
+4. 测试功能是否正常
+
+## 验证安装
+使用以下 SHA256 校验和验证下载文件的完整性：
+\`\`\`
+$APK_SHA256  app-release.apk
+\`\`\`
+
+在终端中运行：
+\`\`\`bash
+shasum -a 256 app-release.apk
+\`\`\`
+
+## 故障排除
+
+### 安装失败
+- 确保 Android 版本为 14 或更高
+- 检查存储空间是否充足
+- 尝试重新下载 APK 文件
+
+### 权限问题
+- 手动进入设置授予所需权限
+- 重启应用后重新尝试
+
+### 功能异常
+- 检查通知访问权限是否正确授予
+- 确认网络连接正常
+- 查看应用日志或联系支持
+
+## 卸载
+在设置 → 应用管理中找到 SMS Forward 并卸载。
 EOF
 
 print_success "Release files created in: $RELEASE_DIR"
@@ -178,9 +289,23 @@ fi
 
 echo ""
 print_success "🎉 Release build completed successfully!"
-print_status "Next steps:"
+print_status "Release files created in: $RELEASE_DIR"
+echo ""
+print_status "📋 Next steps for GitHub release:"
 echo "  1. Test the release build thoroughly"
-echo "  2. Update RELEASE_NOTES.md with actual changes"
-echo "  3. Upload to app stores or distribute as needed"
-echo "  4. Tag the release in git: git tag v$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')"
+echo "  2. Review and update RELEASE_NOTES.md if needed"
+echo "  3. Commit any final changes to git"
+echo "  4. Create and push a git tag:"
+echo "     git tag v$VERSION_NAME"
+echo "     git push origin v$VERSION_NAME"
+echo "  5. Create GitHub release:"
+echo "     - Go to GitHub repository → Releases → Create new release"
+echo "     - Use tag: v$VERSION_NAME"
+echo "     - Upload files from $RELEASE_DIR/"
+echo "     - Copy content from RELEASE_NOTES.md as release description"
+echo "  6. Or use GitHub CLI (if installed):"
+echo "     gh release create v$VERSION_NAME $RELEASE_DIR/* --title \"SMS Forward v$VERSION_NAME\" --notes-file $RELEASE_DIR/RELEASE_NOTES.md"
+echo ""
+print_status "📁 Release package contents:"
+ls -la "$RELEASE_DIR/"
 echo ""

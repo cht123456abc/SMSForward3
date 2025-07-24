@@ -1,0 +1,57 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+      
+    - name: Run tests
+      run: ./gradlew test
+      
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+      
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: debug-apk
+        path: app/build/outputs/apk/debug/app-debug.apk
+        
+    - name: Run Lint
+      run: ./gradlew lint
+      
+    - name: Upload Lint Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: lint-results
+        path: app/build/reports/lint-results-debug.html
