@@ -39,6 +39,16 @@
                     android:textStyle="bold"
                     android:textColor="?attr/colorOnSurface"
                     android:gravity="center"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="by hentiflo"
+                    android:textSize="12sp"
+                    android:textStyle="italic"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:gravity="end"
                     android:layout_marginBottom="16dp" />
 
                 <com.google.android.material.card.MaterialCardView
