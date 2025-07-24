@@ -40,14 +40,6 @@
                     android:drawablePadding="12dp"
                     app:drawableTopCompat="@drawable/ic_email_24dp" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/email_config_description"
-                    android:textSize="16sp"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:gravity="center" />
-
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
@@ -97,13 +89,6 @@
                         android:textStyle="bold"
                         android:textColor="?attr/colorOnSurface"
                         android:layout_marginBottom="4dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/email_forwarding_description"
-                        android:textSize="14sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
 
                 </LinearLayout>
 

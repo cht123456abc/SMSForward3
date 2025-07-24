@@ -19,7 +19,7 @@
     <string name="save_configuration">保存配置</string>
     <string name="save_settings">保存设置</string>
     <string name="clear_configuration">清除配置</string>
-    <string name="email_instructions">\n1. 在QQ邮箱设置中启用SMTP服务\n2. 在QQ邮箱中生成授权码\n3. 使用授权码作为密码（不是您的QQ密码）\n4. 保存前先测试配置\n5. 启用邮件转发以开始接收验证码</string>
+    <string name="email_instructions">1. 在QQ邮箱设置中启用SMTP服务\n2. 在QQ邮箱中生成授权码\n3. 使用授权码作为密码（不是您的QQ密码）\n4. 保存前先测试配置\n5. 启用邮件转发以开始接收验证码</string>
 
     <!-- Toast Messages -->
     <string name="toast_notification_access_required">请启用通知访问权限以进行短信转发</string>
