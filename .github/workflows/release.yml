@@ -72,9 +72,13 @@ jobs:
     - name: Generate checksums
       run: |
         cd app/build/outputs/apk/release/
-        sha256sum app-release.apk > app-release.apk.sha256
+        APK_FILE=$(ls smsforward-v*.apk)
+        sha256sum "$APK_FILE" > "${APK_FILE}.sha256"
         cd ../../../../bundle/release/
-        sha256sum app-release.aab > app-release.aab.sha256
+        AAB_FILE=$(ls app-release.aab)
+        cp "$AAB_FILE" "smsforward-v$(grep versionName ../../../app/build.gradle | sed 's/.*"\(.*\)".*/\1/').aab"
+        AAB_NEW_FILE=$(ls smsforward-v*.aab)
+        sha256sum "$AAB_NEW_FILE" > "${AAB_NEW_FILE}.sha256"
         
     - name: Get version from tag
       id: version
@@ -89,8 +93,10 @@ jobs:
       run: |
         VERSION_NAME=$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
         VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/.*\([0-9]\+\).*/\1/')
-        APK_SHA256=$(cat app/build/outputs/apk/release/app-release.apk.sha256 | cut -d' ' -f1)
-        AAB_SHA256=$(cat app/build/outputs/bundle/release/app-release.aab.sha256 | cut -d' ' -f1)
+        APK_FILE=$(ls app/build/outputs/apk/release/smsforward-v*.apk)
+        AAB_FILE=$(ls app/build/outputs/bundle/release/smsforward-v*.aab)
+        APK_SHA256=$(cat "${APK_FILE}.sha256" | cut -d' ' -f1)
+        AAB_SHA256=$(cat "${AAB_FILE}.sha256" | cut -d' ' -f1)
         
         cat > RELEASE_NOTES.md << EOF
         # SMS Forward App Release ${{ steps.version.outputs.VERSION }}
@@ -109,15 +115,15 @@ jobs:
         - 权限管理界面
         
         ## 📦 下载文件
-        - **app-release.apk**: 用于直接安装的 APK 文件
-        - **app-release.aab**: Android App Bundle (用于应用商店)
+        - **smsforward-v${VERSION_NAME}.apk**: 用于直接安装的 APK 文件
+        - **smsforward-v${VERSION_NAME}.aab**: Android App Bundle (用于应用商店)
         
         ## 🔐 文件校验
         - APK SHA256: \`$APK_SHA256\`
         - AAB SHA256: \`$AAB_SHA256\`
         
         ## 📋 安装说明
-        1. 下载 \`app-release.apk\` 文件
+        1. 下载 \`smsforward-v${VERSION_NAME}.apk\` 文件
         2. 在 Android 设置中启用"未知来源安装"
         3. 安装 APK 文件
         4. 授予必要权限：通知访问、网络访问等
@@ -138,10 +144,10 @@ jobs:
         name: SMS Forward ${{ steps.version.outputs.VERSION }}
         body_path: RELEASE_NOTES.md
         files: |
-          app/build/outputs/apk/release/app-release.apk
-          app/build/outputs/apk/release/app-release.apk.sha256
-          app/build/outputs/bundle/release/app-release.aab
-          app/build/outputs/bundle/release/app-release.aab.sha256
+          app/build/outputs/apk/release/smsforward-v*.apk
+          app/build/outputs/apk/release/smsforward-v*.apk.sha256
+          app/build/outputs/bundle/release/smsforward-v*.aab
+          app/build/outputs/bundle/release/smsforward-v*.aab.sha256
         draft: false
         prerelease: false
       env:

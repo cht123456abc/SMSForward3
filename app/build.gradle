@@ -29,7 +29,7 @@ android {
         minSdk 34
         targetSdk 36
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -48,6 +48,20 @@ android {
             minifyEnabled false
             applicationIdSuffix ".debug"
             versionNameSuffix "-debug"
+        }
+    }
+
+    // 自定义 APK 和 AAB 文件名
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def buildType = variant.buildType.name
+            def versionName = variant.versionName
+
+            if (buildType == "release") {
+                outputFileName = "smsforward-v${versionName}.apk"
+            } else if (buildType == "debug") {
+                outputFileName = "smsforward-v${versionName}-debug.apk"
+            }
         }
     }
     compileOptions {
