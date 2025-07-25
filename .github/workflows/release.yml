@@ -71,14 +71,23 @@ jobs:
         
     - name: Generate checksums
       run: |
+        # 获取版本号
+        VERSION_NAME=$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
+
+        # 处理 APK 文件
         cd app/build/outputs/apk/release/
         APK_FILE=$(ls smsforward-v*.apk)
         sha256sum "$APK_FILE" > "${APK_FILE}.sha256"
-        cd ../../../../bundle/release/
+        echo "Generated checksum for APK: $APK_FILE"
+
+        # 返回项目根目录处理 AAB 文件
+        cd ../../../../..
+        cd app/build/outputs/bundle/release/
         AAB_FILE=$(ls app-release.aab)
-        cp "$AAB_FILE" "smsforward-v$(grep versionName ../../../app/build.gradle | sed 's/.*"\(.*\)".*/\1/').aab"
-        AAB_NEW_FILE=$(ls smsforward-v*.aab)
-        sha256sum "$AAB_NEW_FILE" > "${AAB_NEW_FILE}.sha256"
+        NEW_AAB_NAME="smsforward-v${VERSION_NAME}.aab"
+        cp "$AAB_FILE" "$NEW_AAB_NAME"
+        sha256sum "$NEW_AAB_NAME" > "${NEW_AAB_NAME}.sha256"
+        echo "Generated checksum for AAB: $NEW_AAB_NAME"
         
     - name: Get version from tag
       id: version
@@ -95,8 +104,8 @@ jobs:
         VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/.*\([0-9]\+\).*/\1/')
         APK_FILE=$(ls app/build/outputs/apk/release/smsforward-v*.apk)
         AAB_FILE=$(ls app/build/outputs/bundle/release/smsforward-v*.aab)
-        APK_SHA256=$(cat "${APK_FILE}.sha256" | cut -d' ' -f1)
-        AAB_SHA256=$(cat "${AAB_FILE}.sha256" | cut -d' ' -f1)
+        APK_SHA256=$(cat app/build/outputs/apk/release/smsforward-v*.apk.sha256 | cut -d' ' -f1)
+        AAB_SHA256=$(cat app/build/outputs/bundle/release/smsforward-v*.aab.sha256 | cut -d' ' -f1)
         
         cat > RELEASE_NOTES.md << EOF
         # SMS Forward App Release ${{ steps.version.outputs.VERSION }}
