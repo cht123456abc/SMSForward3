@@ -56,9 +56,6 @@ jobs:
     - name: Build Release APK
       run: ./gradlew assembleRelease
 
-    - name: Build Release AAB
-      run: ./gradlew bundleRelease
-
     - name: Get version info
       id: version_info
       run: |
@@ -91,19 +88,6 @@ jobs:
           exit 1
         fi
 
-        # 检查并重命名AAB文件
-        AAB_SOURCE="app/build/outputs/bundle/release/app-release.aab"
-        AAB_TARGET="app/build/outputs/bundle/release/smsforward-v${VERSION_NAME}.aab"
-        if [ -f "$AAB_SOURCE" ]; then
-          cp "$AAB_SOURCE" "$AAB_TARGET"
-          echo "Created AAB: $AAB_TARGET"
-          sha256sum "$AAB_TARGET" > "${AAB_TARGET}.sha256"
-        else
-          echo "AAB not found, checking directory contents:"
-          ls -la app/build/outputs/bundle/release/
-          exit 1
-        fi
-
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
@@ -127,7 +111,6 @@ jobs:
 
           ## 📦 下载文件
           - **smsforward-v${{ steps.version_info.outputs.version_name }}.apk**: 用于直接安装的 APK 文件
-          - **smsforward-v${{ steps.version_info.outputs.version_name }}.aab**: Android App Bundle (用于应用商店)
 
           ## 📋 安装说明
           1. 下载 APK 文件
@@ -144,8 +127,6 @@ jobs:
         files: |
           app/build/outputs/apk/release/smsforward-v${{ steps.version_info.outputs.version_name }}.apk
           app/build/outputs/apk/release/smsforward-v${{ steps.version_info.outputs.version_name }}.apk.sha256
-          app/build/outputs/bundle/release/smsforward-v${{ steps.version_info.outputs.version_name }}.aab
-          app/build/outputs/bundle/release/smsforward-v${{ steps.version_info.outputs.version_name }}.aab.sha256
         draft: false
         prerelease: false
       env:
