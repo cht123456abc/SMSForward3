@@ -26,3 +26,4 @@ release_*/
 create_keystore.sh
 README_RELEASE.md
 RELEASE_GUIDE.md
+.github/workflows/ci-improvements.md
