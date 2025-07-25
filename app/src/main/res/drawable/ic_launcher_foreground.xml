@@ -20,28 +20,20 @@
         android:pathData="M54,15 C47,15 41,21 41,28 C41,35 47,41 54,41 C61,41 67,35 67,28 C67,21 61,15 54,15 Z" />
 
     <!-- Penguin Eyes (White) -->
-    <circle
+    <path
         android:fillColor="#FFFFFF"
-        android:cx="49"
-        android:cy="26"
-        android:r="3" />
-    <circle
+        android:pathData="M49,23 C51.2,23 53,24.8 53,27 C53,29.2 51.2,31 49,31 C46.8,31 45,29.2 45,27 C45,24.8 46.8,23 49,23 Z" />
+    <path
         android:fillColor="#FFFFFF"
-        android:cx="59"
-        android:cy="26"
-        android:r="3" />
+        android:pathData="M59,23 C61.2,23 63,24.8 63,27 C63,29.2 61.2,31 59,31 C56.8,31 55,29.2 55,27 C55,24.8 56.8,23 59,23 Z" />
 
     <!-- Penguin Eye Pupils -->
-    <circle
+    <path
         android:fillColor="#000000"
-        android:cx="50"
-        android:cy="26"
-        android:r="1.5" />
-    <circle
+        android:pathData="M49,25.5 C50.1,25.5 51,26.4 51,27.5 C51,28.6 50.1,29.5 49,29.5 C47.9,29.5 47,28.6 47,27.5 C47,26.4 47.9,25.5 49,25.5 Z" />
+    <path
         android:fillColor="#000000"
-        android:cx="58"
-        android:cy="26"
-        android:r="1.5" />
+        android:pathData="M59,25.5 C60.1,25.5 61,26.4 61,27.5 C61,28.6 60.1,29.5 59,29.5 C57.9,29.5 57,28.6 57,27.5 C57,26.4 57.9,25.5 59,25.5 Z" />
 
     <!-- Penguin Beak -->
     <path
@@ -57,18 +49,12 @@
         android:pathData="M70,45 L73,45 C76,45 78,47 78,50 L78,60 C78,63 76,65 73,65 L70,65 Z" />
 
     <!-- Penguin Feet -->
-    <ellipse
+    <path
         android:fillColor="#FF9800"
-        android:cx="48"
-        android:cy="82"
-        android:rx="4"
-        android:ry="2" />
-    <ellipse
+        android:pathData="M48,80 C52,80 56,81 56,83 C56,85 52,86 48,86 C44,86 40,85 40,83 C40,81 44,80 48,80 Z" />
+    <path
         android:fillColor="#FF9800"
-        android:cx="60"
-        android:cy="82"
-        android:rx="4"
-        android:ry="2" />
+        android:pathData="M60,80 C64,80 68,81 68,83 C68,85 64,86 60,86 C56,86 52,85 52,83 C52,81 56,80 60,80 Z" />
 
     <!-- SMS Message Bubble (Top Right) -->
     <path
