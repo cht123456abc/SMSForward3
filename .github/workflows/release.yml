@@ -7,24 +7,24 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.0.0)'
+        description: 'Release version (e.g., v1.0.2)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.0.2'
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        
+
     - name: Cache Gradle packages
       uses: actions/cache@v4
       with:
@@ -34,17 +34,19 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
-          
+
     - name: Make gradlew executable
       run: chmod +x ./gradlew
-      
+
     - name: Decode keystore
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       env:
         ENCODED_STRING: ${{ secrets.KEYSTORE_BASE64 }}
       run: |
         echo $ENCODED_STRING | base64 -d > smsforward-release.keystore
-        
+
     - name: Create keystore.properties
+      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
       env:
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -54,116 +56,100 @@ jobs:
         echo "storePassword=$KEYSTORE_PASSWORD" >> keystore.properties
         echo "keyAlias=$KEY_ALIAS" >> keystore.properties
         echo "keyPassword=$KEY_PASSWORD" >> keystore.properties
-        
+
     - name: Build Release APK
       run: ./gradlew assembleRelease
-      
+
     - name: Build Release AAB
       run: ./gradlew bundleRelease
-      
-    - name: Verify APK signature
-      run: |
-        if command -v apksigner &> /dev/null; then
-          apksigner verify app/build/outputs/apk/release/app-release.apk
-        else
-          echo "apksigner not available, skipping verification"
-        fi
-        
-    - name: Generate checksums
-      run: |
-        # 获取版本号
-        VERSION_NAME=$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
 
-        # 处理 APK 文件
-        cd app/build/outputs/apk/release/
-        APK_FILE=$(ls smsforward-v*.apk)
-        sha256sum "$APK_FILE" > "${APK_FILE}.sha256"
-        echo "Generated checksum for APK: $APK_FILE"
-
-        # 返回项目根目录处理 AAB 文件
-        cd ../../../../..
-        cd app/build/outputs/bundle/release/
-        AAB_FILE=$(ls app-release.aab)
-        NEW_AAB_NAME="smsforward-v${VERSION_NAME}.aab"
-        cp "$AAB_FILE" "$NEW_AAB_NAME"
-        sha256sum "$NEW_AAB_NAME" > "${NEW_AAB_NAME}.sha256"
-        echo "Generated checksum for AAB: $NEW_AAB_NAME"
-        
-    - name: Get version from tag
-      id: version
+    - name: Get version info
+      id: version_info
       run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-        else
-          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Get version name from build.gradle
-      id: get_version
-      run: |
-        VERSION_NAME=$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
+        # 获取版本名称（不包含后缀）
+        VERSION_NAME=$(grep 'versionName' app/build.gradle | grep -v 'versionNameSuffix' | grep -v 'def versionName' | head -1 | sed 's/.*"\(.*\)".*/\1/')
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
         echo "Detected version name: $VERSION_NAME"
-        
-    - name: Create Release Notes
+
+        # 获取标签版本
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          TAG_VERSION="${{ github.event.inputs.version }}"
+        else
+          TAG_VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+        echo "Tag version: $TAG_VERSION"
+
+    - name: Prepare release files
       run: |
-        VERSION_NAME=$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
-        VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/.*\([0-9]\+\).*/\1/')
-        APK_FILE=$(ls app/build/outputs/apk/release/smsforward-v*.apk)
-        AAB_FILE=$(ls app/build/outputs/bundle/release/smsforward-v*.aab)
-        APK_SHA256=$(cat app/build/outputs/apk/release/smsforward-v*.apk.sha256 | cut -d' ' -f1)
-        AAB_SHA256=$(cat app/build/outputs/bundle/release/smsforward-v*.aab.sha256 | cut -d' ' -f1)
-        
-        cat > RELEASE_NOTES.md << EOF
-        # SMS Forward App Release ${{ steps.version.outputs.VERSION }}
-        
-        ## 📱 应用信息
-        - **版本**: $VERSION_NAME (Build $VERSION_CODE)
-        - **包名**: com.cht.smsforward
-        - **构建日期**: $(date)
-        - **目标 SDK**: 36 (Android 14+)
-        - **最低 SDK**: 34 (Android 14)
-        
-        ## 🚀 主要功能
-        - SMS 短信转发到邮箱
-        - 通知拦截和处理
-        - 邮件发送配置
-        - 权限管理界面
-        
-        ## 📦 下载文件
-        - **smsforward-v${VERSION_NAME}.apk**: 用于直接安装的 APK 文件
-        - **smsforward-v${VERSION_NAME}.aab**: Android App Bundle (用于应用商店)
-        
-        ## 🔐 文件校验
-        - APK SHA256: \`$APK_SHA256\`
-        - AAB SHA256: \`$AAB_SHA256\`
-        
-        ## 📋 安装说明
-        1. 下载 \`smsforward-v${VERSION_NAME}.apk\` 文件
-        2. 在 Android 设置中启用"未知来源安装"
-        3. 安装 APK 文件
-        4. 授予必要权限：通知访问、网络访问等
-        
-        ## ⚠️ 注意事项
-        - 需要 Android 14 或更高版本
-        - 首次使用需要配置通知权限
-        - 建议从官方 GitHub Releases 下载
-        
-        ## 🐛 问题反馈
-        如遇问题，请在 [GitHub Issues](https://github.com/${{ github.repository }}/issues) 报告。
-        EOF
-        
+        VERSION_NAME="${{ steps.version_info.outputs.version_name }}"
+
+        # 检查并重命名APK文件
+        APK_SOURCE="app/build/outputs/apk/release/smsforward-v${VERSION_NAME}.apk"
+        if [ -f "$APK_SOURCE" ]; then
+          echo "Found APK: $APK_SOURCE"
+          sha256sum "$APK_SOURCE" > "${APK_SOURCE}.sha256"
+        else
+          echo "APK not found, checking directory contents:"
+          ls -la app/build/outputs/apk/release/
+          exit 1
+        fi
+
+        # 检查并重命名AAB文件
+        AAB_SOURCE="app/build/outputs/bundle/release/app-release.aab"
+        AAB_TARGET="app/build/outputs/bundle/release/smsforward-v${VERSION_NAME}.aab"
+        if [ -f "$AAB_SOURCE" ]; then
+          cp "$AAB_SOURCE" "$AAB_TARGET"
+          echo "Created AAB: $AAB_TARGET"
+          sha256sum "$AAB_TARGET" > "${AAB_TARGET}.sha256"
+        else
+          echo "AAB not found, checking directory contents:"
+          ls -la app/build/outputs/bundle/release/
+          exit 1
+        fi
+
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.version.outputs.VERSION }}
-        name: SMS Forward ${{ steps.version.outputs.VERSION }}
-        body_path: RELEASE_NOTES.md
+        tag_name: ${{ steps.version_info.outputs.tag_version }}
+        name: SMS Forward ${{ steps.version_info.outputs.tag_version }}
+        body: |
+          # SMS Forward App Release ${{ steps.version_info.outputs.tag_version }}
+
+          ## 📱 应用信息
+          - **版本**: ${{ steps.version_info.outputs.version_name }}
+          - **包名**: com.cht.smsforward
+          - **构建日期**: ${{ github.run_id }}
+          - **目标 SDK**: 36 (Android 14+)
+          - **最低 SDK**: 34 (Android 14)
+
+          ## 🚀 主要功能
+          - SMS 短信转发到邮箱
+          - 通知拦截和处理
+          - 邮件发送配置
+          - 权限管理界面
+
+          ## 📦 下载文件
+          - **smsforward-v${{ steps.version_info.outputs.version_name }}.apk**: 用于直接安装的 APK 文件
+          - **smsforward-v${{ steps.version_info.outputs.version_name }}.aab**: Android App Bundle (用于应用商店)
+
+          ## 📋 安装说明
+          1. 下载 APK 文件
+          2. 在 Android 设置中启用"未知来源安装"
+          3. 安装 APK 文件
+          4. 授予必要权限：通知访问、网络访问等
+
+          ## ⚠️ 注意事项
+          - 需要 Android 14 或更高版本
+          - 首次使用需要配置通知权限
+
+          ## 🐛 问题反馈
+          如遇问题，请在 [GitHub Issues](https://github.com/${{ github.repository }}/issues) 报告。
         files: |
-          app/build/outputs/apk/release/smsforward-v${{ steps.get_version.outputs.version_name }}.apk
-          app/build/outputs/apk/release/smsforward-v${{ steps.get_version.outputs.version_name }}.apk.sha256
-          app/build/outputs/bundle/release/smsforward-v${{ steps.get_version.outputs.version_name }}.aab
-          app/build/outputs/bundle/release/smsforward-v${{ steps.get_version.outputs.version_name }}.aab.sha256
+          app/build/outputs/apk/release/smsforward-v${{ steps.version_info.outputs.version_name }}.apk
+          app/build/outputs/apk/release/smsforward-v${{ steps.version_info.outputs.version_name }}.apk.sha256
+          app/build/outputs/bundle/release/smsforward-v${{ steps.version_info.outputs.version_name }}.aab
+          app/build/outputs/bundle/release/smsforward-v${{ steps.version_info.outputs.version_name }}.aab.sha256
         draft: false
         prerelease: false
       env:
