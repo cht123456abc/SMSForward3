@@ -1,26 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Background gradient from primary to primary container -->
-    <path
-        android:pathData="M0,0h108v108h-108z">
-        <aapt:attr name="android:fillColor" xmlns:aapt="http://schemas.android.com/aapt">
+
+    <!-- Modern gradient background with cool blue tones -->
+    <path android:pathData="M0,0h108v108h-108z">
+        <aapt:attr name="android:fillColor">
             <gradient
                 android:startX="0"
                 android:startY="0"
                 android:endX="108"
                 android:endY="108"
                 android:type="linear">
-                <item
-                    android:color="#1976D2"
-                    android:offset="0.0" />
-                <item
-                    android:color="#E3F2FD"
-                    android:offset="1.0" />
+                <item android:color="#0D47A1" android:offset="0.0" />
+                <item android:color="#1976D2" android:offset="0.5" />
+                <item android:color="#42A5F5" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
+
+    <!-- Subtle geometric pattern for depth -->
+    <path
+        android:fillColor="#1E88E5"
+        android:fillAlpha="0.1"
+        android:pathData="M0,0 L54,54 L0,108 Z" />
+    <path
+        android:fillColor="#64B5F6"
+        android:fillAlpha="0.1"
+        android:pathData="M108,0 L54,54 L108,108 Z" />
+
 </vector>

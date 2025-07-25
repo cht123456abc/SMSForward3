@@ -4,38 +4,104 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- SMS Message Bubble -->
+    <!-- Penguin Body (Main) -->
+    <path
+        android:fillColor="#2C2C2C"
+        android:pathData="M54,25 C45,25 38,32 38,41 L38,65 C38,74 45,81 54,81 C63,81 70,74 70,65 L70,41 C70,32 63,25 54,25 Z" />
+
+    <!-- Penguin Belly (White) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M25,35 Q25,30 30,30 L65,30 Q70,30 70,35 L70,50 Q70,55 65,55 L35,55 L25,65 L25,50 Q25,45 25,35 Z" />
+        android:pathData="M54,30 C48,30 43,35 43,41 L43,65 C43,71 48,76 54,76 C60,76 65,71 65,65 L65,41 C65,35 60,30 54,30 Z" />
 
-    <!-- SMS Text Lines -->
+    <!-- Penguin Head -->
     <path
-        android:fillColor="#1976D2"
-        android:pathData="M32,38 L62,38 Q63,38 63,39 Q63,40 62,40 L32,40 Q31,40 31,39 Q31,38 32,38 Z" />
-    <path
-        android:fillColor="#1976D2"
-        android:pathData="M32,44 L58,44 Q59,44 59,45 Q59,46 58,46 L32,46 Q31,46 31,45 Q31,44 32,44 Z" />
-    <path
-        android:fillColor="#1976D2"
-        android:pathData="M32,50 L50,50 Q51,50 51,51 Q51,52 50,52 L32,52 Q31,52 31,51 Q31,50 32,50 Z" />
+        android:fillColor="#2C2C2C"
+        android:pathData="M54,15 C47,15 41,21 41,28 C41,35 47,41 54,41 C61,41 67,35 67,28 C67,21 61,15 54,15 Z" />
 
-    <!-- Email Envelope -->
+    <!-- Penguin Eyes (White) -->
+    <circle
+        android:fillColor="#FFFFFF"
+        android:cx="49"
+        android:cy="26"
+        android:r="3" />
+    <circle
+        android:fillColor="#FFFFFF"
+        android:cx="59"
+        android:cy="26"
+        android:r="3" />
+
+    <!-- Penguin Eye Pupils -->
+    <circle
+        android:fillColor="#000000"
+        android:cx="50"
+        android:cy="26"
+        android:r="1.5" />
+    <circle
+        android:fillColor="#000000"
+        android:cx="58"
+        android:cy="26"
+        android:r="1.5" />
+
+    <!-- Penguin Beak -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M54,30 L51,33 L57,33 Z" />
+
+    <!-- Penguin Wings -->
+    <path
+        android:fillColor="#1C1C1C"
+        android:pathData="M35,45 C32,45 30,47 30,50 L30,60 C30,63 32,65 35,65 L38,65 L38,45 Z" />
+    <path
+        android:fillColor="#1C1C1C"
+        android:pathData="M70,45 L73,45 C76,45 78,47 78,50 L78,60 C78,63 76,65 73,65 L70,65 Z" />
+
+    <!-- Penguin Feet -->
+    <ellipse
+        android:fillColor="#FF9800"
+        android:cx="48"
+        android:cy="82"
+        android:rx="4"
+        android:ry="2" />
+    <ellipse
+        android:fillColor="#FF9800"
+        android:cx="60"
+        android:cy="82"
+        android:rx="4"
+        android:ry="2" />
+
+    <!-- SMS Message Bubble (Top Right) -->
     <path
         android:fillColor="#4CAF50"
-        android:pathData="M45,45 L80,45 Q83,45 83,48 L83,70 Q83,73 80,73 L45,73 Q42,73 42,70 L42,48 Q42,45 45,45 Z" />
+        android:pathData="M75,20 C77,20 79,22 79,24 L79,32 C79,34 77,36 75,36 L70,36 L68,38 L68,32 C68,30 68,28 68,26 C68,22 71,20 75,20 Z" />
+
+    <!-- SMS Text Lines in Bubble -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M71,23 L76,23 C76.5,23 77,23.5 77,24 C77,24.5 76.5,25 76,25 L71,25 C70.5,25 70,24.5 70,24 C70,23.5 70.5,23 71,23 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M71,27 L75,27 C75.5,27 76,27.5 76,28 C76,28.5 75.5,29 75,29 L71,29 C70.5,29 70,28.5 70,28 C70,27.5 70.5,27 71,27 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M71,31 L74,31 C74.5,31 75,31.5 75,32 C75,32.5 74.5,33 74,33 L71,33 C70.5,33 70,32.5 70,32 C70,31.5 70.5,31 71,31 Z" />
+
+    <!-- Email Envelope (Bottom Right) -->
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M75,70 L85,70 C87,70 89,72 89,74 L89,82 C89,84 87,86 85,86 L75,86 C73,86 71,84 71,82 L71,74 C71,72 73,70 75,70 Z" />
 
     <!-- Email Envelope Flap -->
     <path
-        android:fillColor="#2E7D32"
-        android:pathData="M42,48 L62.5,59 L83,48 L83,52 L62.5,63 L42,52 Z" />
+        android:fillColor="#1976D2"
+        android:pathData="M71,74 L80,78 L89,74 L89,76 L80,80 L71,76 Z" />
 
-    <!-- Forward Arrow -->
+    <!-- Forward Arrow (Connecting SMS to Email) -->
     <path
-        android:fillColor="#FF9800"
-        android:pathData="M68,35 L75,42 L68,49 L70,49 L77,42 L70,35 Z" />
+        android:fillColor="#FF5722"
+        android:pathData="M78,45 L82,49 L78,53 L79,53 L83,49 L79,45 Z" />
     <path
-        android:fillColor="#FF9800"
-        android:pathData="M30,40 L75,40 Q76,40 76,41 Q76,43 75,43 L30,43 Q29,43 29,41 Q29,40 30,40 Z" />
+        android:fillColor="#FF5722"
+        android:pathData="M68,47 L82,47 C82.5,47 83,47.5 83,48 C83,48.5 82.5,49 82,49 L68,49 C67.5,49 67,48.5 67,48 C67,47.5 67.5,47 68,47 Z" />
 
 </vector>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D47A1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1976D2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#42A5F5;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Penguin Body Shadow -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#backgroundGradient)"/>
+  
+  <!-- Subtle Pattern -->
+  <path d="M0,0 L256,256 L0,512 Z" fill="#1E88E5" opacity="0.1"/>
+  <path d="M512,0 L256,256 L512,512 Z" fill="#64B5F6" opacity="0.1"/>
+  
+  <!-- Penguin Body (Main) -->
+  <ellipse cx="256" cy="280" rx="80" ry="120" fill="#2C2C2C" filter="url(#shadow)"/>
+  
+  <!-- Penguin Belly (White) -->
+  <ellipse cx="256" cy="280" rx="55" ry="95" fill="#FFFFFF"/>
+  
+  <!-- Penguin Head -->
+  <circle cx="256" cy="180" r="65" fill="#2C2C2C"/>
+  
+  <!-- Penguin Eyes (White) -->
+  <circle cx="235" cy="165" r="12" fill="#FFFFFF"/>
+  <circle cx="277" cy="165" r="12" fill="#FFFFFF"/>
+  
+  <!-- Penguin Eye Pupils -->
+  <circle cx="238" cy="165" r="6" fill="#000000"/>
+  <circle cx="274" cy="165" r="6" fill="#000000"/>
+  
+  <!-- Eye Highlights -->
+  <circle cx="240" cy="162" r="2" fill="#FFFFFF"/>
+  <circle cx="276" cy="162" r="2" fill="#FFFFFF"/>
+  
+  <!-- Penguin Beak -->
+  <path d="M256,185 L245,200 L267,200 Z" fill="#FF9800"/>
+  
+  <!-- Penguin Wings -->
+  <ellipse cx="190" cy="260" rx="25" ry="60" fill="#1C1C1C"/>
+  <ellipse cx="322" cy="260" rx="25" ry="60" fill="#1C1C1C"/>
+  
+  <!-- Penguin Feet -->
+  <ellipse cx="230" cy="390" rx="18" ry="8" fill="#FF9800"/>
+  <ellipse cx="282" cy="390" rx="18" ry="8" fill="#FF9800"/>
+  
+  <!-- SMS Message Bubble (Top Right) -->
+  <path d="M350,120 C360,120 368,128 368,138 L368,170 C368,180 360,188 350,188 L330,188 L320,200 L320,170 C320,160 320,150 320,140 C320,128 330,120 350,120 Z" fill="#4CAF50"/>
+  
+  <!-- SMS Text Lines in Bubble -->
+  <rect x="330" y="135" width="25" height="3" rx="1.5" fill="#FFFFFF"/>
+  <rect x="330" y="145" width="20" height="3" rx="1.5" fill="#FFFFFF"/>
+  <rect x="330" y="155" width="15" height="3" rx="1.5" fill="#FFFFFF"/>
+  
+  <!-- Email Envelope (Bottom Right) -->
+  <rect x="340" y="320" width="50" height="35" rx="3" fill="#2196F3"/>
+  
+  <!-- Email Envelope Flap -->
+  <path d="M340,325 L365,337 L390,325 L390,330 L365,342 L340,330 Z" fill="#1976D2"/>
+  
+  <!-- Forward Arrow (Connecting SMS to Email) -->
+  <path d="M370,220 L385,235 L370,250 L375,250 L390,235 L375,220 Z" fill="#FF5722"/>
+  <rect x="320" y="232" width="70" height="6" rx="3" fill="#FF5722"/>
+  
+  <!-- Cute Blush on Penguin -->
+  <circle cx="210" cy="190" r="8" fill="#FFB6C1" opacity="0.6"/>
+  <circle cx="302" cy="190" r="8" fill="#FFB6C1" opacity="0.6"/>
+  
+  <!-- Small sparkles for magic effect -->
+  <path d="M150,100 L152,105 L157,103 L152,108 L150,113 L148,108 L143,103 L148,105 Z" fill="#FFFFFF" opacity="0.8"/>
+  <path d="M380,80 L381,83 L384,82 L381,85 L380,88 L379,85 L376,82 L379,83 Z" fill="#FFFFFF" opacity="0.8"/>
+  <path d="M120,350 L121,352 L123,351 L121,353 L120,355 L119,353 L117,351 L119,352 Z" fill="#FFFFFF" opacity="0.8"/>
+</svg>
