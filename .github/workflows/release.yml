@@ -97,6 +97,13 @@ jobs:
         else
           echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         fi
+
+    - name: Get version name from build.gradle
+      id: get_version
+      run: |
+        VERSION_NAME=$(grep versionName app/build.gradle | sed 's/.*"\(.*\)".*/\1/')
+        echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+        echo "Detected version name: $VERSION_NAME"
         
     - name: Create Release Notes
       run: |
@@ -153,10 +160,10 @@ jobs:
         name: SMS Forward ${{ steps.version.outputs.VERSION }}
         body_path: RELEASE_NOTES.md
         files: |
-          app/build/outputs/apk/release/smsforward-v*.apk
-          app/build/outputs/apk/release/smsforward-v*.apk.sha256
-          app/build/outputs/bundle/release/smsforward-v*.aab
-          app/build/outputs/bundle/release/smsforward-v*.aab.sha256
+          app/build/outputs/apk/release/smsforward-v${{ steps.get_version.outputs.version_name }}.apk
+          app/build/outputs/apk/release/smsforward-v${{ steps.get_version.outputs.version_name }}.apk.sha256
+          app/build/outputs/bundle/release/smsforward-v${{ steps.get_version.outputs.version_name }}.aab
+          app/build/outputs/bundle/release/smsforward-v${{ steps.get_version.outputs.version_name }}.aab.sha256
         draft: false
         prerelease: false
       env:
