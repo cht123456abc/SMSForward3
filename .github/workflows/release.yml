@@ -38,24 +38,20 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x ./gradlew
 
-    - name: Decode keystore
-      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
-      env:
-        ENCODED_STRING: ${{ secrets.KEYSTORE_BASE64 }}
+    - name: Setup signing (optional)
       run: |
-        echo $ENCODED_STRING | base64 -d > smsforward-release.keystore
-
-    - name: Create keystore.properties
-      if: ${{ secrets.KEYSTORE_BASE64 != '' }}
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      run: |
-        echo "storeFile=smsforward-release.keystore" > keystore.properties
-        echo "storePassword=$KEYSTORE_PASSWORD" >> keystore.properties
-        echo "keyAlias=$KEY_ALIAS" >> keystore.properties
-        echo "keyPassword=$KEY_PASSWORD" >> keystore.properties
+        # 如果有签名密钥，则设置签名
+        if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          echo "Setting up signing..."
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > smsforward-release.keystore
+          echo "storeFile=smsforward-release.keystore" > keystore.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> keystore.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> keystore.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> keystore.properties
+          echo "✅ Signing configured"
+        else
+          echo "⚠️ No signing keys found, building unsigned APK"
+        fi
 
     - name: Build Release APK
       run: ./gradlew assembleRelease
