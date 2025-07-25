@@ -1,3 +1,5 @@
+
+![](docs/screenshots/1x1_Please_redesign_an_app_icon_for_%20(1).png)
 # SMSForward - SMS 验证码转发器
 
 一个专为 Android 14+ 设计的 SMS 验证码自动转发应用，通过通知拦截技术将短信验证码自动转发到指定邮箱。
@@ -57,6 +59,12 @@
 3. 开启"SMTP服务"
 4. 生成授权码（用于应用中的密码字段）
 5. 在应用中使用授权码而非 QQ 密码
+
+## 📱 应用截图
+![权限设置](docs/screenshots/微信图片_20250726001319_39.jpg)
+![邮箱配置](docs/screenshots/微信图片_20250726001316_41.jpg)
+![短信拦截](docs/screenshots/微信图片_20250726001319_40.jpg)
+![转发效果](docs/screenshots/微信图片_20250726001304_42.jpg)
 
 ## 🔧 使用方法
 
