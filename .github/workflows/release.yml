@@ -38,6 +38,27 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x ./gradlew
 
+    - name: Validate Android API compatibility
+      run: |
+        echo "🔍 Validating Android API level compatibility..."
+        MIN_SDK=$(grep 'minSdk' app/build.gradle | grep -o '[0-9]\+' | head -1)
+        TARGET_SDK=$(grep 'targetSdk' app/build.gradle | grep -o '[0-9]\+' | head -1)
+        echo "Detected minSdk: $MIN_SDK"
+        echo "Detected targetSdk: $TARGET_SDK"
+
+        if [ "$MIN_SDK" -eq 23 ]; then
+          echo "✅ Minimum SDK correctly set to 23 (Android 6.0)"
+        else
+          echo "❌ Expected minSdk 23, found $MIN_SDK"
+          exit 1
+        fi
+
+        if [ "$TARGET_SDK" -eq 36 ]; then
+          echo "✅ Target SDK correctly set to 36 (Android 15)"
+        else
+          echo "⚠️ Expected targetSdk 36, found $TARGET_SDK"
+        fi
+
     - name: Setup signing (optional)
       run: |
         # 如果有签名密钥，则设置签名
@@ -52,6 +73,12 @@ jobs:
         else
           echo "⚠️ No signing keys found, building unsigned APK"
         fi
+
+    - name: Run lint checks for API compatibility
+      run: |
+        echo "🔍 Running lint checks for API compatibility..."
+        ./gradlew lint
+        echo "✅ Lint checks completed"
 
     - name: Build Release APK
       run: ./gradlew assembleRelease
@@ -100,14 +127,15 @@ jobs:
           - **版本**: ${{ steps.version_info.outputs.version_name }}
           - **包名**: com.cht.smsforward
           - **构建日期**: ${{ github.run_id }}
-          - **目标 SDK**: 36 (Android 14+)
-          - **最低 SDK**: 34 (Android 14)
+          - **目标 SDK**: 36 (Android 15)
+          - **最低 SDK**: 23 (Android 6.0)
 
           ## 🚀 主要功能
-          - SMS 短信转发到邮箱
-          - 通知拦截和处理
-          - 邮件发送配置
-          - 权限管理界面
+          - SMS 验证码自动转发到邮箱
+          - 通知拦截技术 (兼容 Android 6.0+ 设备)
+          - 安全的邮件发送配置
+          - 统一的权限管理界面
+          - 验证码智能识别和高亮显示
 
           ## 📦 下载文件
           - **smsforward-v${{ steps.version_info.outputs.version_name }}.apk**: 用于直接安装的 APK 文件
@@ -117,10 +145,13 @@ jobs:
           2. 在 Android 设置中启用"未知来源安装"
           3. 安装 APK 文件
           4. 授予必要权限：通知访问、网络访问等
+          5. 配置邮箱 SMTP 设置
 
-          ## ⚠️ 注意事项
-          - 需要 Android 14 或更高版本
-          - 首次使用需要配置通知权限
+          ## ⚠️ 系统要求
+          - **最低版本**: Android 6.0 (API 23) 或更高版本
+          - **推荐版本**: Android 8.0+ 以获得最佳体验
+          - **权限要求**: 通知访问权限、网络访问权限
+          - **特别优化**: 针对 Meizu 设备进行了兼容性优化
 
           ## 🐛 问题反馈
           如遇问题，请在 [GitHub Issues](https://github.com/${{ github.repository }}/issues) 报告。

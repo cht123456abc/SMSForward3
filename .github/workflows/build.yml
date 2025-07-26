@@ -33,7 +33,22 @@ jobs:
           
     - name: Make gradlew executable
       run: chmod +x ./gradlew
-      
+
+    - name: Validate Android API compatibility
+      run: |
+        echo "🔍 Validating Android API level compatibility..."
+        MIN_SDK=$(grep 'minSdk' app/build.gradle | grep -o '[0-9]\+' | head -1)
+        TARGET_SDK=$(grep 'targetSdk' app/build.gradle | grep -o '[0-9]\+' | head -1)
+        echo "Detected minSdk: $MIN_SDK (Android 6.0+)"
+        echo "Detected targetSdk: $TARGET_SDK"
+
+        if [ "$MIN_SDK" -eq 23 ]; then
+          echo "✅ Minimum SDK correctly set to 23 (Android 6.0)"
+        else
+          echo "❌ Expected minSdk 23, found $MIN_SDK"
+          exit 1
+        fi
+
     - name: Run tests
       run: ./gradlew test
       
