@@ -8,7 +8,6 @@
 
 - **应用名称**: SMSForward
 - **包名**: com.cht.smsforward
-- **当前版本**: 1.0.5
 - **目标 SDK**: 36 (Android 15)
 - **最低 SDK**: 23 (Android 6.0)
 
