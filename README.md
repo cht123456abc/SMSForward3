@@ -2,21 +2,21 @@
 ![](docs/screenshots/1x1_Please_redesign_an_app_icon_for.png)
 # SMSForward - SMS 验证码转发器
 
-一个专为 Android 14+ 设计的 SMS 验证码自动转发应用，通过通知拦截技术将短信验证码自动转发到指定邮箱。
+一个兼容 Android 6.0+ 的 SMS 验证码自动转发应用，通过通知拦截技术将短信验证码自动转发到指定邮箱。
 
 ## 📱 应用信息
 
 - **应用名称**: SMSForward
 - **包名**: com.cht.smsforward
 - **当前版本**: 1.0.5
-- **目标 SDK**: 36 (Android 14+)
-- **最低 SDK**: 34 (Android 14)
+- **目标 SDK**: 36 (Android 15)
+- **最低 SDK**: 23 (Android 6.0)
 
 ## 🚀 主要功能
 
 ### 核心功能
 - **SMS 验证码自动转发**: 自动识别并转发短信中的验证码到指定邮箱
-- **通知拦截技术**: 使用 NotificationListenerService 拦截短信通知（兼容 Android 14/Meizu 设备）
+- **通知拦截技术**: 使用 NotificationListenerService 拦截短信通知（兼容 Android 6.0+ 设备，特别优化 Meizu 设备）
 - **邮件发送配置**: 支持 QQ 邮箱 SMTP 配置，安全存储邮箱凭据
 - **权限管理界面**: 统一的权限状态显示和管理
 
@@ -29,7 +29,7 @@
 ## 📦 安装说明
 
 ### 系统要求
-- Android 14 (API 34) 或更高版本
+- Android 6.0 (API 23) 或更高版本
 - 网络连接权限
 - 通知访问权限
 
@@ -115,7 +115,7 @@ A: 请尝试：
 - 检查网络连接和防火墙设置
 
 **Q: 在某些设备上无法正常工作？**
-A: 本应用专为解决 Android 14/Meizu 设备的兼容性问题而设计，使用通知拦截而非传统 SMS API。
+A: 本应用使用通知拦截技术而非传统 SMS API，兼容 Android 6.0+ 设备，特别针对 Meizu 等设备进行了优化。如遇问题请确保已正确授予通知访问权限。
 
 ## 📄 开源协议
 
@@ -128,7 +128,7 @@ A: 本应用专为解决 Android 14/Meizu 设备的兼容性问题而设计，�
 ### 开发环境
 - Android Studio 2024.1+
 - JDK 17+
-- Android SDK 34+
+- Android SDK 23+
 
 ### 构建说明
 ```bash

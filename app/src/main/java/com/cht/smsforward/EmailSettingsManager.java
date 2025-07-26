@@ -34,13 +34,16 @@ public class EmailSettingsManager {
     
     /**
      * Initialize encrypted shared preferences
+     * Uses EncryptedSharedPreferences for API 23+ with fallback for exceptional cases
      */
     private void initializeEncryptedPreferences() {
         try {
+            // EncryptedSharedPreferences is supported on API 23+ (Android 6.0+)
+            // Since our minSdk is 23, this should always work unless there are device-specific issues
             MasterKey masterKey = new MasterKey.Builder(context)
                     .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                     .build();
-            
+
             encryptedPrefs = EncryptedSharedPreferences.create(
                     context,
                     PREFS_FILE_NAME,
@@ -48,14 +51,15 @@ public class EmailSettingsManager {
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
-            
+
             Log.d(TAG, "Encrypted preferences initialized successfully");
         } catch (GeneralSecurityException | IOException e) {
             Log.e(TAG, "Failed to initialize encrypted preferences - using fallback", e);
-            // Fallback to regular SharedPreferences (not recommended for production)
+            // Fallback to regular SharedPreferences for exceptional cases (device-specific issues)
+            // This should be rare since we target API 23+ where EncryptedSharedPreferences is supported
             try {
                 encryptedPrefs = context.getSharedPreferences(PREFS_FILE_NAME + "_fallback", Context.MODE_PRIVATE);
-                Log.w(TAG, "Using unencrypted fallback preferences for email settings");
+                Log.w(TAG, "Using unencrypted fallback preferences for email settings due to device-specific issue");
             } catch (Exception fallbackException) {
                 Log.e(TAG, "Failed to initialize fallback preferences", fallbackException);
                 encryptedPrefs = null;

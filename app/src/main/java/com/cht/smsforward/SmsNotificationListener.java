@@ -70,7 +70,7 @@ public class SmsNotificationListener extends NotificationListenerService {
 
         Log.e(TAG, "✅ SMS notification detected from: " + sbn.getPackageName());
 
-        // Additional Android 14 compatibility checks
+        // Additional SMS validation checks
         if (!isValidSmsNotification(sbn)) {
             Log.e(TAG, "Notification filtered out - not a valid SMS notification");
             return;
@@ -128,8 +128,9 @@ public class SmsNotificationListener extends NotificationListenerService {
     }
 
     /**
-     * Additional validation for Android 14 compatibility
+     * Additional validation for SMS notifications
      * Ensures the notification is actually an SMS and not just from an SMS app
+     * Compatible with Android 6.0+ (API 23+)
      */
     private boolean isValidSmsNotification(StatusBarNotification sbn) {
         Notification notification = sbn.getNotification();
