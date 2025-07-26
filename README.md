@@ -140,16 +140,6 @@ cd SMSForward3
 
 如遇问题，请在 [GitHub Issues](https://github.com/cht123456abc/SMSForward3/issues) 页面报告。
 
-## 🔄 更新日志
-
-### v1.0.5 (最新)
-- 优化邮件发送稳定性
-- 改进通知拦截兼容性
-- 用户界面优化
-- 修复已知问题
-
-查看完整更新日志：[Releases](https://github.com/cht123456abc/SMSForward3/releases)
-
 ---
 
 **注意**: 本应用仅用于个人验证码转发用途，请遵守相关法律法规和服务条款。
