@@ -3,27 +3,41 @@
     <string name="app_title">SMS Verification Code Forwarder</string>
     <string name="function_permission_status">功能权限状态</string>
     <string name="email_forwarding_status">邮件转发功能</string>
+    <string name="serverchan_forwarding_status">Server酱转发功能</string>
+    <string name="forwarding_status">转发状态</string>
     <string name="notification_access_enabled">✓ 通知访问已启用</string>
     <string name="notification_access_required">⚠ 需要启用通知访问权限</string>
     <string name="email_forwarding_enabled">✓ 邮件转发已启用 - 准备转发短信</string>
     <string name="email_forwarding_disabled">⚠ 邮件转发未启用</string>
+    <string name="serverchan_forwarding_enabled">✓ Server酱转发已启用 - 准备推送短信</string>
+    <string name="serverchan_forwarding_disabled">⚠ Server酱转发未启用</string>
+    <string name="forwarding_enabled">✓ 转发功能已启用 - 准备转发短信</string>
+    <string name="forwarding_disabled">⚠ 转发功能未启用</string>
     <string name="enable_notification_access">Enable Notification Access</string>
     <string name="email_settings">Email Settings</string>
+    <string name="serverchan_settings">Server酱</string>
     <string name="recent_messages">Recent SMS Messages</string>
     <string name="empty_state_message">No SMS messages received yet.\n\nMake sure notification access is enabled and you have configured email settings.</string>
     <string name="email_config_title">Email Configuration</string>
+    <string name="serverchan_config_title">Server酱 配置</string>
     <string name="enable_email_forwarding">Enable Email Forwarding</string>
+    <string name="enable_serverchan_forwarding">启用 Server酱 转发</string>
     <string name="sender_email_label">Sender QQ Email Address</string>
     <string name="sender_email_hint">Sender QQ Email (your-email@qq.com)</string>
     <string name="sender_password_label">QQ Email Authorization Code</string>
     <string name="sender_password_hint">QQ Email Authorization Code(not password)</string>
     <string name="recipient_email_label">Recipient Email Address</string>
     <string name="recipient_email_hint">Recipient Email (recipient@example.com)</string>
+    <string name="sendkey_label">Server酱 SendKey</string>
+    <string name="sendkey_hint">Server酱 SendKey (来自 sct.ftqq.com)</string>
     <string name="test_email">Test Email</string>
-    <string name="save_configuration">Save Configuration</string>
+    <string name="test_serverchan">测试Serv酱</string>
+    <string name="save_configuration">保存配置</string>
     <string name="save_settings">Save Settings</string>
     <string name="clear_configuration">Clear Configuration</string>
     <string name="email_instructions">Instructions:\n\n1. Enable SMTP service in your QQ Mail settings\n2. Generate an authorization code in QQ Mail\n3. Use the authorization code as password (not your QQ password)\n4. Test the configuration before saving\n5. Enable email forwarding to start receiving verification codes</string>
+    <string name="serverchan_instructions">1. 访问 sct.ftqq.com 并使用微信登录\n2. 创建新的通道并获取您的 SendKey\n3. 在上方输入框中输入 SendKey\n4. 保存前请先测试配置\n5. 启用 Server酱 转发以开始接收推送通知</string>
+    <string name="serverchan_config_description">配置 Server酱 推送通知以接收验证码</string>
 
     <!-- Toast Messages -->
     <string name="toast_notification_access_required">Please enable notification access for SMS forwarding</string>
@@ -31,13 +45,21 @@
     <string name="toast_new_sms_with_codes">New SMS with verification codes received</string>
     <string name="toast_new_sms">New SMS received</string>
     <string name="toast_fill_email_fields">Please fill in all email fields correctly</string>
+    <string name="toast_fill_serverchan_fields">请正确填写 SendKey 字段</string>
     <string name="toast_testing_email">Testing email configuration...</string>
+    <string name="toast_testing_serverchan">正在测试 Server酱 配置...</string>
     <string name="toast_test_email_success">Test email sent successfully!</string>
+    <string name="toast_test_serverchan_success">Server酱 测试消息发送成功！</string>
     <string name="toast_test_email_failed">Test email failed: %1$s</string>
+    <string name="toast_test_serverchan_failed">Server酱 测试消息发送失败: %1$s</string>
     <string name="toast_config_saved">Email configuration saved successfully</string>
+    <string name="toast_serverchan_config_saved">Server酱 配置保存成功</string>
     <string name="toast_config_save_failed">Failed to save email configuration</string>
+    <string name="toast_serverchan_config_save_failed">Server酱 配置保存失败</string>
     <string name="toast_config_cleared">Email configuration cleared</string>
+    <string name="toast_serverchan_config_cleared">Server酱 配置已清除</string>
     <string name="toast_config_clear_failed">Failed to clear email configuration</string>
+    <string name="toast_serverchan_config_clear_failed">Server酱 配置清除失败</string>
     <string name="toast_code_copied">Verification code copied: %1$s</string>
 
     <!-- Email Error Messages -->
@@ -51,6 +73,15 @@
     <string name="network_diagnostics_result">Network Diagnostics Result</string>
     <string name="retry_send">Retry Send</string>
     <string name="email_send_failed">Email Send Failed</string>
+    <string name="serverchan_send_failed">Server酱 发送失败</string>
+    <string name="forward_send_failed">转发失败</string>
+
+    <!-- Unified forwarding status messages -->
+    <string name="forward_status_not_sent">未转发</string>
+    <string name="forward_status_sending">转发中</string>
+    <string name="forward_status_success">已转发</string>
+    <string name="forward_status_failed">转发失败</string>
+    <string name="forward_status_disabled">转发已禁用</string>
 
     <!-- Button and UI Text -->
     <string name="back_button">Back</string>
@@ -58,7 +89,7 @@
     <string name="copy_code">Copy Code</string>
     <string name="copy_code_with_value">Copy %1$s</string>
     <string name="verification_codes_label">Verification Codes:</string>
-    <string name="setup_instructions_title">Setup Instructions</string>
+    <string name="setup_instructions_title">设置说明</string>
     <string name="email_forwarding_description">Automatically forward verification codes to email</string>
     <string name="email_config_description">Configure email forwarding for verification codes</string>
     <string name="notification_access_description">Notification access is required to receive SMS messages.\n\nPlease enable notification access in Settings.</string>

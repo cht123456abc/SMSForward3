@@ -34,14 +34,17 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView notificationStatusText;
     private TextView emailStatusText;
+    private TextView serverChanStatusText;
     private Button permissionButton;
     private Button emailConfigButton;
+    private Button serverChanConfigButton;
     private RecyclerView smsRecyclerView;
     private TextView emptyStateText;
     private SmsAdapter smsAdapter;
     private SmsBroadcastReceiver smsBroadcastReceiver;
     private SmsDataManager smsDataManager;
     private EmailSettingsManager emailSettingsManager;
+    private ServerChanSettingsManager serverChanSettingsManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +65,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize email settings manager
         emailSettingsManager = new EmailSettingsManager(this);
+
+        // Initialize Server酱 settings manager
+        serverChanSettingsManager = new ServerChanSettingsManager(this);
 
         // Initialize UI components
         initializeUI();
@@ -125,14 +131,18 @@ public class MainActivity extends AppCompatActivity {
         Log.e(TAG, "Finding UI components");
         notificationStatusText = findViewById(R.id.notificationStatusText);
         emailStatusText = findViewById(R.id.emailStatusText);
+        serverChanStatusText = findViewById(R.id.serverChanStatusText);
         permissionButton = findViewById(R.id.permissionButton);
         emailConfigButton = findViewById(R.id.emailConfigButton);
+        serverChanConfigButton = findViewById(R.id.serverChanConfigButton);
         smsRecyclerView = findViewById(R.id.smsRecyclerView);
         emptyStateText = findViewById(R.id.emptyStateText);
 
         Log.e(TAG, "UI components found - emailConfigButton: " + (emailConfigButton != null) +
+              ", serverChanConfigButton: " + (serverChanConfigButton != null) +
               ", notificationStatusText: " + (notificationStatusText != null) +
-              ", emailStatusText: " + (emailStatusText != null));
+              ", emailStatusText: " + (emailStatusText != null) +
+              ", serverChanStatusText: " + (serverChanStatusText != null));
 
         // Set up RecyclerView
         smsAdapter = new SmsAdapter(this);
@@ -150,6 +160,11 @@ public class MainActivity extends AppCompatActivity {
         emailConfigButton.setOnClickListener(v -> {
             Log.e(TAG, "Email config button clicked");
             openEmailConfiguration();
+        });
+
+        serverChanConfigButton.setOnClickListener(v -> {
+            Log.e(TAG, "Server酱 config button clicked");
+            openServerChanConfiguration();
         });
 
         Log.e(TAG, "UI components initialized successfully");
@@ -172,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Check and update all status displays (notification access and email forwarding)
+     * Check and update all status displays (notification access, email forwarding, and Server酱 forwarding)
      */
     private void checkAndUpdateAllStatus() {
         Log.d(TAG, "=== CHECKING ALL STATUS ===");
@@ -187,9 +202,16 @@ public class MainActivity extends AppCompatActivity {
         boolean emailValid = emailConfig.isValid();
         Log.d(TAG, "Email forwarding enabled: " + emailEnabled + ", valid: " + emailValid);
 
-        // Update UI for both statuses
+        // Check Server酱 forwarding status
+        ServerChanConfig serverChanConfig = serverChanSettingsManager.loadServerChanConfig();
+        boolean serverChanEnabled = serverChanConfig.isEnabled();
+        boolean serverChanValid = serverChanConfig.isValid();
+        Log.d(TAG, "Server酱 forwarding enabled: " + serverChanEnabled + ", valid: " + serverChanValid);
+
+        // Update UI for all statuses
         updateNotificationStatus(notificationEnabled);
         updateEmailForwardingStatus(emailEnabled, emailValid);
+        updateServerChanForwardingStatus(serverChanEnabled, serverChanValid);
 
         // Update empty state and permission button visibility
         updateEmptyState();
@@ -223,6 +245,21 @@ public class MainActivity extends AppCompatActivity {
             emailStatusText.setText(getString(R.string.email_forwarding_disabled));
             emailStatusText.setTextColor(getResources().getColor(R.color.error_red));
             Log.d(TAG, "Email forwarding status: disabled or invalid");
+        }
+    }
+
+    /**
+     * Update Server酱 forwarding status display
+     */
+    private void updateServerChanForwardingStatus(boolean enabled, boolean valid) {
+        if (enabled && valid) {
+            serverChanStatusText.setText(getString(R.string.serverchan_forwarding_enabled));
+            serverChanStatusText.setTextColor(getResources().getColor(R.color.success_green));
+            Log.d(TAG, "Server酱 forwarding status: enabled and ready");
+        } else {
+            serverChanStatusText.setText(getString(R.string.serverchan_forwarding_disabled));
+            serverChanStatusText.setTextColor(getResources().getColor(R.color.error_red));
+            Log.d(TAG, "Server酱 forwarding status: disabled or invalid");
         }
     }
 
@@ -353,6 +390,14 @@ public class MainActivity extends AppCompatActivity {
      */
     private void openEmailConfiguration() {
         Intent intent = new Intent(this, EmailConfigActivity.class);
+        startActivity(intent);
+    }
+
+    /**
+     * Open Server酱 configuration activity
+     */
+    private void openServerChanConfiguration() {
+        Intent intent = new Intent(this, ServerChanConfigActivity.class);
         startActivity(intent);
     }
 

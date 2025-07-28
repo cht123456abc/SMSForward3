@@ -95,13 +95,30 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:layout_marginBottom="8dp">
 
                             <TextView
                                 android:id="@+id/emailStatusText"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:text="检查邮件转发状态中..."
+                                android:textSize="14sp"
+                                android:textColor="?attr/colorOnSurface" />
+
+                        </LinearLayout>
+
+                        <!-- Server酱 Forwarding Status -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/serverChanStatusText"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="检查Server酱转发状态中..."
                                 android:textSize="14sp"
                                 android:textColor="?attr/colorOnSurface" />
 
@@ -114,35 +131,57 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
+                    android:orientation="vertical"
                     android:layout_marginTop="8dp">
 
+                    <!-- Permission Button Row -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/permissionButton"
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="@string/enable_notification_access"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginBottom="8dp"
                         android:visibility="gone"
                         android:gravity="center"
                         android:textAlignment="center"
                         style="@style/Widget.MaterialComponents.Button" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/emailConfigButton"
-                        android:layout_width="0dp"
+                    <!-- Configuration Buttons Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/email_settings"
-                        android:layout_marginStart="8dp"
-                        android:gravity="center"
-                        android:textAlignment="center"
-                        app:icon="@drawable/ic_email_24dp"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                        android:orientation="horizontal"
+                        android:gravity="center">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/emailConfigButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/email_settings"
+                            android:layout_marginEnd="4dp"
+                            android:gravity="center"
+                            android:textAlignment="center"
+                            app:icon="@drawable/ic_email_24dp"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/serverChanConfigButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/serverchan_settings"
+                            android:layout_marginStart="4dp"
+                            android:gravity="center"
+                            android:textAlignment="center"
+                            app:icon="@drawable/ic_notification_24dp"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 

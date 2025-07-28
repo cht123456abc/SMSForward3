@@ -39,6 +39,12 @@
             android:exported="false"
             android:label="Email Configuration" />
 
+        <!-- Server酱 Configuration Activity -->
+        <activity
+            android:name=".ServerChanConfigActivity"
+            android:exported="false"
+            android:label="Server酱 Configuration" />
+
         <!-- SMS Notification Listener Service -->
         <service
             android:name=".SmsNotificationListener"

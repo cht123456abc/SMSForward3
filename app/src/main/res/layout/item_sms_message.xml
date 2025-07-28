@@ -95,11 +95,11 @@
                     android:foreground="?android:attr/selectableItemBackground" />
 
                 <TextView
-                    android:id="@+id/emailStatusIndicator"
+                    android:id="@+id/forwardStatusIndicator"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="未发送"
+                    android:text="未转发"
                     android:textSize="12sp"
                     android:textStyle="bold"
                     android:background="#E0E0E0"

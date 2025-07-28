@@ -25,6 +25,7 @@ public class SmsNotificationListener extends NotificationListenerService {
 
     private SmsDataManager smsDataManager;
     private EmailSender emailSender;
+    private ServerChanSender serverChanSender;
     private MessageQueue messageQueue;
 
     // Common SMS app package names for Android and Meizu devices
@@ -49,6 +50,7 @@ public class SmsNotificationListener extends NotificationListenerService {
         // Initialize components for direct processing
         smsDataManager = new SmsDataManager(this);
         emailSender = new EmailSender(this);
+        serverChanSender = new ServerChanSender(this);
         messageQueue = new MessageQueue(this);
     }
     
@@ -263,13 +265,15 @@ public class SmsNotificationListener extends NotificationListenerService {
         intent.putExtra("sender", smsMessage.getSender());
         intent.putExtra("content", smsMessage.getContent());
         intent.putExtra("timestamp", smsMessage.getTimestamp());
-        intent.putExtra("email_status", smsMessage.getEmailForwardStatus().name());
+        intent.putExtra("forward_status", smsMessage.getForwardStatus().name());
+        intent.putExtra("forward_error", smsMessage.getForwardError());
 
         // Send local broadcast
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 
         Log.d(TAG, "SMS status update broadcasted - Sender: " + smsMessage.getSender() +
-              ", Status: " + smsMessage.getEmailForwardStatus());
+              ", Forward Status: " + smsMessage.getForwardStatus() +
+              ", Forward Error: " + smsMessage.getForwardError());
     }
 
 
@@ -330,7 +334,7 @@ public class SmsNotificationListener extends NotificationListenerService {
                 new Thread(() -> {
                     try {
                         Log.d(TAG, "Sending verification code email: " + primaryCode);
-                        smsMessage.setEmailForwardStatus(EmailForwardStatus.SENDING);
+                        smsMessage.setEmailSending();
                         smsDataManager.updateSmsMessage(smsMessage);
 
                         emailSender.sendVerificationCodeEmail(
@@ -341,7 +345,7 @@ public class SmsNotificationListener extends NotificationListenerService {
                                 @Override
                                 public void onSuccess() {
                                     Log.d(TAG, "Verification code email sent successfully");
-                                    smsMessage.setEmailForwardStatus(EmailForwardStatus.SUCCESS);
+                                    smsMessage.setEmailSent();
                                     smsDataManager.updateSmsMessage(smsMessage);
 
                                     // 广播状态更新给UI
@@ -351,7 +355,7 @@ public class SmsNotificationListener extends NotificationListenerService {
                                 @Override
                                 public void onFailure(String error) {
                                     Log.e(TAG, "Failed to send verification code email: " + error);
-                                    smsMessage.setEmailForwardStatus(EmailForwardStatus.FAILED);
+                                    smsMessage.setEmailFailed(error);
                                     smsDataManager.updateSmsMessage(smsMessage);
 
                                     // 广播状态更新给UI
@@ -361,13 +365,56 @@ public class SmsNotificationListener extends NotificationListenerService {
                         );
                     } catch (Exception e) {
                         Log.e(TAG, "Error sending email", e);
-                        smsMessage.setEmailForwardStatus(EmailForwardStatus.FAILED);
+                        smsMessage.setEmailFailed(e.getMessage());
                         smsDataManager.updateSmsMessage(smsMessage);
 
                         // 广播状态更新给UI
                         broadcastStatusUpdate(smsMessage);
                     }
                 }, "Email-Sending-" + System.currentTimeMillis()).start();
+
+                // 异步处理Server酱发送以避免阻塞
+                new Thread(() -> {
+                    try {
+                        Log.d(TAG, "Sending verification code to Server酱: " + primaryCode);
+                        smsMessage.setServerChanSending();
+                        smsDataManager.updateSmsMessage(smsMessage);
+
+                        serverChanSender.sendVerificationCodeMessage(
+                            primaryCode,
+                            content,
+                            sender,
+                            new ServerChanSender.ServerChanSendCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    Log.d(TAG, "Verification code sent to Server酱 successfully");
+                                    smsMessage.setServerChanSent();
+                                    smsDataManager.updateSmsMessage(smsMessage);
+
+                                    // 广播状态更新给UI
+                                    broadcastStatusUpdate(smsMessage);
+                                }
+
+                                @Override
+                                public void onFailure(String error) {
+                                    Log.e(TAG, "Failed to send verification code to Server酱: " + error);
+                                    smsMessage.setServerChanFailed(error);
+                                    smsDataManager.updateSmsMessage(smsMessage);
+
+                                    // 广播状态更新给UI
+                                    broadcastStatusUpdate(smsMessage);
+                                }
+                            }
+                        );
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error sending to Server酱", e);
+                        smsMessage.setServerChanFailed(e.getMessage());
+                        smsDataManager.updateSmsMessage(smsMessage);
+
+                        // 广播状态更新给UI
+                        broadcastStatusUpdate(smsMessage);
+                    }
+                }, "ServerChan-Sending-" + System.currentTimeMillis()).start();
             }
 
         } catch (Exception e) {

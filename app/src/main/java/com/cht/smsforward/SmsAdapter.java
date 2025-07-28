@@ -93,7 +93,7 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
         private TextView contentText;
         private LinearLayout verificationCodesLayout;
         private TextView verificationCodesText;
-        private TextView emailStatusIndicator;
+        private TextView forwardStatusIndicator;
         private TextView packageText;
         
         public SmsViewHolder(@NonNull View itemView) {
@@ -104,7 +104,7 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
             contentText = itemView.findViewById(R.id.contentText);
             verificationCodesLayout = itemView.findViewById(R.id.verificationCodesLayout);
             verificationCodesText = itemView.findViewById(R.id.verificationCodesText);
-            emailStatusIndicator = itemView.findViewById(R.id.emailStatusIndicator);
+            forwardStatusIndicator = itemView.findViewById(R.id.forwardStatusIndicator);
             packageText = itemView.findViewById(R.id.packageText);
         }
         
@@ -137,8 +137,8 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
                     }
                 });
 
-                // Update email status indicator
-                updateEmailStatusIndicator(smsMessage);
+                // Update unified forwarding status indicator
+                updateForwardStatusIndicator(smsMessage);
                 
             } else {
                 verificationCodesLayout.setVisibility(View.GONE);
@@ -146,41 +146,41 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
         }
         
         /**
-         * Update email status indicator based on SMS message email forward status
+         * Update unified forwarding status indicator based on SMS message forward status
          */
-        private void updateEmailStatusIndicator(SmsMessage smsMessage) {
-            EmailForwardStatus status = smsMessage.getEmailForwardStatus();
+        private void updateForwardStatusIndicator(SmsMessage smsMessage) {
+            ForwardStatus status = smsMessage.getForwardStatus();
 
-            if (status == null || status == EmailForwardStatus.DISABLED) {
-                emailStatusIndicator.setVisibility(View.GONE);
+            if (status == null || status == ForwardStatus.DISABLED) {
+                forwardStatusIndicator.setVisibility(View.GONE);
                 return;
             }
 
-            emailStatusIndicator.setVisibility(View.VISIBLE);
+            forwardStatusIndicator.setVisibility(View.VISIBLE);
 
             switch (status) {
                 case NOT_SENT:
-                    emailStatusIndicator.setText("未转发");
-                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
-                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.darker_gray));
+                    forwardStatusIndicator.setText(context.getString(R.string.forward_status_not_sent));
+                    forwardStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    forwardStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.darker_gray));
                     break;
                 case SENDING:
-                    emailStatusIndicator.setText("转发中");
-                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
-                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_orange_dark));
+                    forwardStatusIndicator.setText(context.getString(R.string.forward_status_sending));
+                    forwardStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    forwardStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_orange_dark));
                     break;
                 case SUCCESS:
-                    emailStatusIndicator.setText("已转发");
-                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
-                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_green_dark));
+                    forwardStatusIndicator.setText(context.getString(R.string.forward_status_success));
+                    forwardStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    forwardStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_green_dark));
                     break;
                 case FAILED:
-                    emailStatusIndicator.setText("转发失败");
-                    emailStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
-                    emailStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_dark));
+                    forwardStatusIndicator.setText(context.getString(R.string.forward_status_failed));
+                    forwardStatusIndicator.setTextColor(context.getResources().getColor(android.R.color.white));
+                    forwardStatusIndicator.setBackgroundColor(context.getResources().getColor(android.R.color.holo_red_dark));
                     break;
                 default:
-                    emailStatusIndicator.setVisibility(View.GONE);
+                    forwardStatusIndicator.setVisibility(View.GONE);
                     break;
             }
         }

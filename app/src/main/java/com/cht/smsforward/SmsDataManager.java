@@ -56,9 +56,11 @@ public class SmsDataManager {
     public SmsDataManager(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-        // Create Gson with custom EmailForwardStatus serializer/deserializer
+        // Create Gson with custom ForwardStatus serializer/deserializer (and legacy adapters for backward compatibility)
         gson = new GsonBuilder()
+                .registerTypeAdapter(ForwardStatus.class, new ForwardStatusAdapter())
                 .registerTypeAdapter(EmailForwardStatus.class, new EmailForwardStatusAdapter())
+                .registerTypeAdapter(ServerChanForwardStatus.class, new ServerChanForwardStatusAdapter())
                 .create();
 
         // 初始化后台线程用于异步操作
@@ -124,7 +126,22 @@ public class SmsDataManager {
     }
 
     /**
-     * Custom Gson adapter for EmailForwardStatus enum
+     * Custom Gson adapter for unified ForwardStatus enum
+     */
+    private static class ForwardStatusAdapter implements JsonSerializer<ForwardStatus>, JsonDeserializer<ForwardStatus> {
+        @Override
+        public JsonElement serialize(ForwardStatus src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.getValue());
+        }
+
+        @Override
+        public ForwardStatus deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return ForwardStatus.fromValue(json.getAsString());
+        }
+    }
+
+    /**
+     * Custom Gson adapter for EmailForwardStatus enum (legacy support)
      */
     private static class EmailForwardStatusAdapter implements JsonSerializer<EmailForwardStatus>, JsonDeserializer<EmailForwardStatus> {
         @Override
@@ -135,6 +152,21 @@ public class SmsDataManager {
         @Override
         public EmailForwardStatus deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return EmailForwardStatus.fromValue(json.getAsString());
+        }
+    }
+
+    /**
+     * Custom Gson adapter for ServerChanForwardStatus enum
+     */
+    private static class ServerChanForwardStatusAdapter implements JsonSerializer<ServerChanForwardStatus>, JsonDeserializer<ServerChanForwardStatus> {
+        @Override
+        public JsonElement serialize(ServerChanForwardStatus src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.getValue());
+        }
+
+        @Override
+        public ServerChanForwardStatus deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return ServerChanForwardStatus.fromValue(json.getAsString());
         }
     }
     
