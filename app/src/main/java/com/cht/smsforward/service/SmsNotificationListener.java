@@ -1,4 +1,16 @@
-package com.cht.smsforward;
+package com.cht.smsforward.service;
+
+import com.cht.smsforward.config.EmailConfig;
+import com.cht.smsforward.config.ForwardingConfig;
+import com.cht.smsforward.config.ServerChanConfig;
+import com.cht.smsforward.config.UnifiedSettingsManager;
+import com.cht.smsforward.data.MessageQueue;
+import com.cht.smsforward.data.SmsDataManager;
+import com.cht.smsforward.data.SmsMessage;
+import com.cht.smsforward.sender.EmailSender;
+import com.cht.smsforward.sender.MessageSender;
+import com.cht.smsforward.sender.ServerChanSender;
+import com.cht.smsforward.util.VerificationCodeExtractor;
 
 import android.app.ActivityManager;
 import android.app.Notification;

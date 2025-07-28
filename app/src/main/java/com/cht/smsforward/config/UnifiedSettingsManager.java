@@ -1,4 +1,4 @@
-package com.cht.smsforward;
+package com.cht.smsforward.config;
 
 import android.content.Context;
 

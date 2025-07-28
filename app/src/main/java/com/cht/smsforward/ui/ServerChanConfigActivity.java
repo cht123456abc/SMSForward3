@@ -1,4 +1,8 @@
-package com.cht.smsforward;
+package com.cht.smsforward.ui;
+
+import com.cht.smsforward.R;
+import com.cht.smsforward.config.ServerChanConfig;
+import com.cht.smsforward.sender.ServerChanSender;
 
 import android.os.Bundle;
 import android.text.TextUtils;

@@ -1,4 +1,6 @@
-package com.cht.smsforward;
+package com.cht.smsforward.util;
+
+import com.cht.smsforward.data.SmsMessage;
 
 import android.content.Context;
 import android.content.Intent;

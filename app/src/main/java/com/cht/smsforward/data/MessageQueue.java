@@ -1,4 +1,4 @@
-package com.cht.smsforward;
+package com.cht.smsforward.data;
 
 import android.content.Context;
 import android.content.SharedPreferences;

@@ -1,4 +1,4 @@
-package com.cht.smsforward;
+package com.cht.smsforward.config;
 
 /**
  * Base interface for all forwarding configuration types

@@ -1,4 +1,4 @@
-package com.cht.smsforward;
+package com.cht.smsforward.model;
 
 /**
  * Unified enumeration representing the status of message forwarding (email and Server酱)

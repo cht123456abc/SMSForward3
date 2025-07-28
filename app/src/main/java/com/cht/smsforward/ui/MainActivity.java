@@ -1,4 +1,12 @@
-package com.cht.smsforward;
+package com.cht.smsforward.ui;
+
+import com.cht.smsforward.R;
+import com.cht.smsforward.config.EmailConfig;
+import com.cht.smsforward.config.ServerChanConfig;
+import com.cht.smsforward.config.UnifiedSettingsManager;
+import com.cht.smsforward.data.SmsDataManager;
+import com.cht.smsforward.data.SmsMessage;
+import com.cht.smsforward.model.ForwardStatus;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;

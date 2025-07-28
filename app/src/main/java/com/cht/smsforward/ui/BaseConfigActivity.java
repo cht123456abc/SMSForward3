@@ -1,4 +1,9 @@
-package com.cht.smsforward;
+package com.cht.smsforward.ui;
+
+import com.cht.smsforward.R;
+import com.cht.smsforward.config.ForwardingConfig;
+import com.cht.smsforward.config.UnifiedSettingsManager;
+import com.cht.smsforward.sender.MessageSender;
 
 import android.app.AlertDialog;
 import android.os.Bundle;

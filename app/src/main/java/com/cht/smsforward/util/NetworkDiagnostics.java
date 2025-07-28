@@ -1,4 +1,6 @@
-package com.cht.smsforward;
+package com.cht.smsforward.util;
+
+import com.cht.smsforward.config.EmailConfig;
 
 import android.content.Context;
 import android.net.ConnectivityManager;

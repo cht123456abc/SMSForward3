@@ -1,4 +1,7 @@
-package com.cht.smsforward;
+package com.cht.smsforward.sender;
+
+import com.cht.smsforward.config.ForwardingConfig;
+import com.cht.smsforward.config.UnifiedSettingsManager;
 
 import android.content.Context;
 import android.os.AsyncTask;

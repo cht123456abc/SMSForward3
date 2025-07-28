@@ -1,4 +1,8 @@
-package com.cht.smsforward;
+package com.cht.smsforward.ui;
+
+import com.cht.smsforward.R;
+import com.cht.smsforward.data.SmsMessage;
+import com.cht.smsforward.model.ForwardStatus;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;

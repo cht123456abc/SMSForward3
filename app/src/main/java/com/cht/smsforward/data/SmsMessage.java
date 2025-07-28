@@ -1,4 +1,7 @@
-package com.cht.smsforward;
+package com.cht.smsforward.data;
+
+import com.cht.smsforward.model.ForwardStatus;
+import com.cht.smsforward.util.VerificationCodeExtractor;
 
 import android.text.SpannableString;
 
