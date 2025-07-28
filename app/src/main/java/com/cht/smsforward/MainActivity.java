@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
@@ -45,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
     private SmsDataManager smsDataManager;
     private EmailSettingsManager emailSettingsManager;
     private ServerChanSettingsManager serverChanSettingsManager;
+    private Handler uiRefreshHandler;
+    private Runnable uiRefreshRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,29 +83,50 @@ public class MainActivity extends AppCompatActivity {
 
         // Check notification access permission and email forwarding status
         checkAndUpdateAllStatus();
+
+        // Set up periodic UI refresh to catch any missed status updates
+        setupPeriodicUIRefresh();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "MainActivity onResume - reloading data and checking status");
+
         // Re-check permissions and status when returning from Settings
         checkAndUpdateAllStatus();
 
-        // Re-register broadcast receiver (LocalBroadcastManager only)
-        if (smsBroadcastReceiver != null) {
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(SMS_RECEIVED_ACTION);
-            filter.addAction(SMS_STATUS_UPDATE_ACTION);
-            LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver, filter);
-        }
+        // Force reload cache to get latest data from background processing
+        smsDataManager.forceReloadCache();
 
         // Reload messages from storage to sync with any background processing
         loadSavedMessages();
+
+        // Start periodic UI refresh when app is in foreground
+        startPeriodicUIRefresh();
+
+        Log.d(TAG, "MainActivity onResume completed - UI should be up to date");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "MainActivity onDestroy - cleaning up resources");
+
+        // Unregister broadcast receiver to avoid memory leaks
+        if (smsBroadcastReceiver != null) {
+            try {
+                LocalBroadcastManager.getInstance(this).unregisterReceiver(smsBroadcastReceiver);
+                Log.d(TAG, "Broadcast receiver unregistered successfully");
+            } catch (IllegalArgumentException e) {
+                // Receiver was not registered
+                Log.d(TAG, "Broadcast receiver was not registered");
+            }
+        }
+
+        // Stop periodic UI refresh
+        stopPeriodicUIRefresh();
+
         // 清理SmsDataManager资源
         if (smsDataManager != null) {
             smsDataManager.cleanup();
@@ -112,15 +136,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Unregister broadcast receiver to avoid memory leaks
-        if (smsBroadcastReceiver != null) {
-            try {
-                LocalBroadcastManager.getInstance(this).unregisterReceiver(smsBroadcastReceiver);
-            } catch (IllegalArgumentException e) {
-                // Receiver was not registered
-                Log.d(TAG, "Broadcast receiver was not registered");
-            }
-        }
+        Log.d(TAG, "MainActivity onPause - keeping broadcast receiver active for background updates");
+        // Keep broadcast receiver registered to receive status updates even when app is in background
+        // This ensures real-time status updates work regardless of app state
+
+        // Stop periodic UI refresh when app goes to background
+        stopPeriodicUIRefresh();
     }
 
     /**
@@ -184,6 +205,49 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver, filter);
 
         Log.e(TAG, "SMS broadcast receiver registered (LocalBroadcastManager only)");
+    }
+
+    /**
+     * Set up periodic UI refresh to catch any missed status updates
+     */
+    private void setupPeriodicUIRefresh() {
+        uiRefreshHandler = new Handler(getMainLooper());
+        uiRefreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "Periodic UI refresh - checking for status updates");
+
+                // Force reload cache and refresh UI
+                smsDataManager.forceReloadCache();
+                loadSavedMessages();
+
+                // Schedule next refresh in 10 seconds
+                uiRefreshHandler.postDelayed(this, 10000);
+            }
+        };
+    }
+
+    /**
+     * Start periodic UI refresh (when app is in foreground)
+     */
+    private void startPeriodicUIRefresh() {
+        if (uiRefreshHandler != null && uiRefreshRunnable != null) {
+            // Remove any existing callbacks first
+            uiRefreshHandler.removeCallbacks(uiRefreshRunnable);
+            // Start periodic refresh every 10 seconds
+            uiRefreshHandler.postDelayed(uiRefreshRunnable, 10000);
+            Log.d(TAG, "Started periodic UI refresh");
+        }
+    }
+
+    /**
+     * Stop periodic UI refresh (when app goes to background)
+     */
+    private void stopPeriodicUIRefresh() {
+        if (uiRefreshHandler != null && uiRefreshRunnable != null) {
+            uiRefreshHandler.removeCallbacks(uiRefreshRunnable);
+            Log.d(TAG, "Stopped periodic UI refresh");
+        }
     }
 
     /**
@@ -443,11 +507,37 @@ public class MainActivity extends AppCompatActivity {
         // 强制重新加载缓存以确保获取最新状态
         smsDataManager.forceReloadCache();
 
-        // 重新加载消息以更新UI中的状态
-        loadSavedMessages();
+        // Try to find and update the specific message in the adapter first (more efficient)
+        List<SmsMessage> currentMessages = smsDataManager.loadSmsMessages();
+        SmsMessage updatedMessage = null;
 
-        // Show a brief status update toast if there's an error
-        if (forwardError != null && !forwardError.isEmpty()) {
+        for (SmsMessage message : currentMessages) {
+            if (message.getTimestamp() == timestamp &&
+                message.getSender().equals(sender) &&
+                message.getContent().equals(content)) {
+                updatedMessage = message;
+                break;
+            }
+        }
+
+        if (updatedMessage != null) {
+            // Try to update the specific item in the adapter
+            boolean updated = smsAdapter.updateSmsMessage(updatedMessage);
+            if (!updated) {
+                // If specific update failed, reload all messages
+                Log.d(TAG, "Specific message update failed, reloading all messages");
+                loadSavedMessages();
+            } else {
+                Log.d(TAG, "Successfully updated specific message in adapter");
+            }
+        } else {
+            // If message not found, reload all messages
+            Log.d(TAG, "Updated message not found, reloading all messages");
+            loadSavedMessages();
+        }
+
+        // Show a brief status update toast if there's an error (but not for disabled services)
+        if (forwardError != null && !forwardError.isEmpty() && !"disabled".equals(forwardError)) {
             showToast("转发失败: " + forwardError);
         }
     }

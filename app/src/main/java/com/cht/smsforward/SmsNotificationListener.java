@@ -333,7 +333,20 @@ public class SmsNotificationListener extends NotificationListenerService {
             if (primaryCode != null) {
                 new Thread(() -> {
                     try {
-                        Log.d(TAG, "Sending verification code email: " + primaryCode);
+                        Log.d(TAG, "Attempting to send verification code email: " + primaryCode);
+
+                        // Check if email is enabled before setting sending status
+                        EmailConfig emailConfig = new EmailSettingsManager(this).loadEmailConfig();
+                        if (!emailConfig.isEnabled() || !emailConfig.isValid()) {
+                            Log.d(TAG, "Email forwarding is disabled or invalid, skipping email send");
+                            // Set status to disabled instead of failed when service is not enabled
+                            smsMessage.setEmailFailed("disabled");
+                            smsDataManager.updateSmsMessage(smsMessage);
+                            // 不广播状态更新，避免显示错误提醒
+                            return;
+                        }
+
+                        // Only set sending status if email is actually enabled and valid
                         smsMessage.setEmailSending();
                         smsDataManager.updateSmsMessage(smsMessage);
 
@@ -379,7 +392,20 @@ public class SmsNotificationListener extends NotificationListenerService {
                 // 异步处理Server酱发送以避免阻塞
                 new Thread(() -> {
                     try {
-                        Log.d(TAG, "Sending verification code to Server酱: " + primaryCode);
+                        Log.d(TAG, "Attempting to send verification code to Server酱: " + primaryCode);
+
+                        // Check if Server酱 is enabled before setting sending status
+                        ServerChanConfig serverChanConfig = new ServerChanSettingsManager(this).loadServerChanConfig();
+                        if (!serverChanConfig.isEnabled() || !serverChanConfig.isValid()) {
+                            Log.d(TAG, "Server酱 forwarding is disabled or invalid, skipping Server酱 send");
+                            // Set status to disabled instead of failed when service is not enabled
+                            smsMessage.setServerChanFailed("disabled");
+                            smsDataManager.updateSmsMessage(smsMessage);
+                            // 不广播状态更新，避免显示错误提醒
+                            return;
+                        }
+
+                        // Only set sending status if Server酱 is actually enabled and valid
                         smsMessage.setServerChanSending();
                         smsDataManager.updateSmsMessage(smsMessage);
 

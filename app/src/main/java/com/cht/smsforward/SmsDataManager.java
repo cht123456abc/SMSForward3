@@ -321,7 +321,7 @@ public class SmsDataManager {
     }
     
     /**
-     * 更新现有的SMS消息（优化版本 - 减少I/O操作）
+     * 更新现有的SMS消息（优化版本 - 同步保存以确保状态更新的实时性）
      */
     public void updateSmsMessage(SmsMessage updatedMessage) {
         synchronized (cacheLock) {
@@ -335,10 +335,10 @@ public class SmsDataManager {
 
                         cachedMessages.set(i, updatedMessage);
 
-                        // 异步保存到存储
-                        backgroundHandler.post(() -> saveSmsMessagesInternal(new ArrayList<>(cachedMessages)));
+                        // 同步保存到存储以确保状态更新的实时性
+                        saveSmsMessagesInternal(new ArrayList<>(cachedMessages));
 
-                        Log.d(TAG, "Updated SMS message with email status: " + updatedMessage.getEmailForwardStatus());
+                        Log.d(TAG, "Updated SMS message with forward status: " + updatedMessage.getForwardStatus());
                         return;
                     }
                 }
@@ -353,8 +353,9 @@ public class SmsDataManager {
                 message.getSender().equals(updatedMessage.getSender()) &&
                 message.getContent().equals(updatedMessage.getContent())) {
                 messages.set(i, updatedMessage);
-                saveSmsMessages(messages);
-                Log.d(TAG, "Updated SMS message with email status: " + updatedMessage.getEmailForwardStatus());
+                // 同步保存以确保状态更新的实时性
+                saveSmsMessagesInternal(messages);
+                Log.d(TAG, "Updated SMS message with forward status: " + updatedMessage.getForwardStatus());
                 return;
             }
         }
