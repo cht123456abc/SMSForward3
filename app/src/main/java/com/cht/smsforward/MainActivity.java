@@ -373,14 +373,8 @@ public class MainActivity extends AppCompatActivity {
     private void loadSavedMessages() {
         List<SmsMessage> savedMessages = smsDataManager.loadSmsMessages();
 
-        // Sort messages by timestamp in descending order (newest first)
-        savedMessages.sort((msg1, msg2) -> Long.compare(msg2.getTimestamp(), msg1.getTimestamp()));
-
-        // Clear existing messages and add sorted messages
-        smsAdapter.clearMessages();
-        for (SmsMessage message : savedMessages) {
-            smsAdapter.addSmsMessage(message);
-        }
+        // Use the more efficient update method that properly notifies the adapter
+        smsAdapter.updateAllMessages(savedMessages);
         updateEmptyState();
         Log.d(TAG, "Loaded " + savedMessages.size() + " saved SMS messages");
     }
@@ -437,14 +431,25 @@ public class MainActivity extends AppCompatActivity {
     private void handleSmsStatusUpdate(Intent intent) {
         Log.d(TAG, "Handling SMS status update");
 
+        // Extract message details from intent
+        String sender = intent.getStringExtra("sender");
+        String content = intent.getStringExtra("content");
+        long timestamp = intent.getLongExtra("timestamp", 0);
+        String forwardStatus = intent.getStringExtra("forward_status");
+        String forwardError = intent.getStringExtra("forward_error");
+
+        Log.d(TAG, "Status update for message from " + sender + " at " + timestamp + " - Status: " + forwardStatus);
+
         // 强制重新加载缓存以确保获取最新状态
         smsDataManager.forceReloadCache();
 
         // 重新加载消息以更新UI中的状态
         loadSavedMessages();
 
-        String emailStatus = intent.getStringExtra("email_status");
-        Log.d(TAG, "SMS status updated to: " + emailStatus);
+        // Show a brief status update toast if there's an error
+        if (forwardError != null && !forwardError.isEmpty()) {
+            showToast("转发失败: " + forwardError);
+        }
     }
 
 

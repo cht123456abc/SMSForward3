@@ -127,9 +127,8 @@ public class EmailConfigActivity extends AppCompatActivity {
     private void updateFormVisibility() {
         boolean enabled = emailEnabledSwitch.isChecked();
         configFormLayout.setVisibility(enabled ? View.VISIBLE : View.GONE);
-        // 保持操作按钮可见，但调整保存按钮文本
-        actionButtonsCard.setVisibility(View.VISIBLE);
-        saveConfigButton.setText(enabled ? getString(R.string.save_configuration) : getString(R.string.save_settings));
+        // 匹配Server酱页面的行为：只有在启用时才显示操作按钮
+        actionButtonsCard.setVisibility(enabled ? View.VISIBLE : View.GONE);
     }
 
     /**

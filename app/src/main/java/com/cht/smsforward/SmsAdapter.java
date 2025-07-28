@@ -82,6 +82,36 @@ public class SmsAdapter extends RecyclerView.Adapter<SmsAdapter.SmsViewHolder> {
     public List<SmsMessage> getMessages() {
         return new ArrayList<>(smsMessages);
     }
+
+    /**
+     * Update an existing SMS message by finding it based on timestamp and sender
+     */
+    public boolean updateSmsMessage(SmsMessage updatedMessage) {
+        for (int i = 0; i < smsMessages.size(); i++) {
+            SmsMessage existingMessage = smsMessages.get(i);
+            // Match by timestamp and sender to identify the same message
+            if (existingMessage.getTimestamp() == updatedMessage.getTimestamp() &&
+                existingMessage.getSender().equals(updatedMessage.getSender())) {
+                smsMessages.set(i, updatedMessage);
+                notifyItemChanged(i);
+                return true;
+            }
+        }
+        return false; // Message not found
+    }
+
+    /**
+     * Update all messages with new data (more efficient than clear + add all)
+     */
+    public void updateAllMessages(List<SmsMessage> newMessages) {
+        // Sort new messages by timestamp in descending order (newest first)
+        List<SmsMessage> sortedMessages = new ArrayList<>(newMessages);
+        sortedMessages.sort((msg1, msg2) -> Long.compare(msg2.getTimestamp(), msg1.getTimestamp()));
+
+        smsMessages.clear();
+        smsMessages.addAll(sortedMessages);
+        notifyDataSetChanged();
+    }
     
     /**
      * ViewHolder for SMS message items

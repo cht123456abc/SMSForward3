@@ -337,6 +337,9 @@ public class SmsNotificationListener extends NotificationListenerService {
                         smsMessage.setEmailSending();
                         smsDataManager.updateSmsMessage(smsMessage);
 
+                        // 广播状态更新给UI (发送中状态)
+                        broadcastStatusUpdate(smsMessage);
+
                         emailSender.sendVerificationCodeEmail(
                             primaryCode,
                             content,
@@ -379,6 +382,9 @@ public class SmsNotificationListener extends NotificationListenerService {
                         Log.d(TAG, "Sending verification code to Server酱: " + primaryCode);
                         smsMessage.setServerChanSending();
                         smsDataManager.updateSmsMessage(smsMessage);
+
+                        // 广播状态更新给UI (发送中状态)
+                        broadcastStatusUpdate(smsMessage);
 
                         serverChanSender.sendVerificationCodeMessage(
                             primaryCode,
