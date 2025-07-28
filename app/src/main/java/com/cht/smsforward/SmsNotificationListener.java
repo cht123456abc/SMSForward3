@@ -254,6 +254,24 @@ public class SmsNotificationListener extends NotificationListenerService {
               ", Verification codes: " + verificationCodes.size());
     }
 
+    /**
+     * Broadcast SMS status update to MainActivity for UI refresh
+     */
+    private void broadcastStatusUpdate(SmsMessage smsMessage) {
+        // Create intent to broadcast status update
+        Intent intent = new Intent("com.cht.smsforward.SMS_STATUS_UPDATE");
+        intent.putExtra("sender", smsMessage.getSender());
+        intent.putExtra("content", smsMessage.getContent());
+        intent.putExtra("timestamp", smsMessage.getTimestamp());
+        intent.putExtra("email_status", smsMessage.getEmailForwardStatus().name());
+
+        // Send local broadcast
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+        Log.d(TAG, "SMS status update broadcasted - Sender: " + smsMessage.getSender() +
+              ", Status: " + smsMessage.getEmailForwardStatus());
+    }
+
 
 
     /**
@@ -286,49 +304,71 @@ public class SmsNotificationListener extends NotificationListenerService {
 
 
     /**
-     * Process SMS message with single streamlined path
+     * Process SMS message with optimized asynchronous processing
      */
     private void processSmsMessage(String content, String sender, String packageName,
                                  long timestamp, List<String> verificationCodes, String primaryCode) {
+
         try {
-            // Create SMS message object
+            // Create SMS message object first
             List<String> codes = verificationCodes != null ? verificationCodes : new ArrayList<>();
             SmsMessage smsMessage = new SmsMessage(content, sender, packageName, timestamp, codes, primaryCode);
 
-            // Save to persistent storage (with duplicate detection)
+            // 同步保存到数据库以确保UI能立即看到新消息
             smsDataManager.addSmsMessage(smsMessage);
             Log.d(TAG, "SMS message processed and saved");
 
-            // Send verification code email if available
-            if (primaryCode != null) {
-                Log.d(TAG, "Sending verification code email: " + primaryCode);
-                smsMessage.setEmailForwardStatus(EmailForwardStatus.SENDING);
-                smsDataManager.updateSmsMessage(smsMessage);
+            // 验证保存是否成功
+            List<SmsMessage> allMessages = smsDataManager.loadSmsMessages();
+            Log.d(TAG, "Verification: Total messages in database after save: " + allMessages.size());
 
-                emailSender.sendVerificationCodeEmail(
-                    primaryCode,
-                    content,
-                    sender,
-                    new EmailSender.EmailSendCallback() {
-                        @Override
-                        public void onSuccess() {
-                            Log.d(TAG, "Verification code email sent successfully");
-                            smsMessage.setEmailForwardStatus(EmailForwardStatus.SUCCESS);
-                            smsDataManager.updateSmsMessage(smsMessage);
-                        }
-
-                        @Override
-                        public void onFailure(String error) {
-                            Log.e(TAG, "Failed to send verification code email: " + error);
-                            smsMessage.setEmailForwardStatus(EmailForwardStatus.FAILED);
-                            smsDataManager.updateSmsMessage(smsMessage);
-                        }
-                    }
-                );
-            }
-
-            // Notify MainActivity to update UI
+            // 立即广播UI更新（现在数据库已经有数据了）
             broadcastSmsContent(content, sender, verificationCodes, primaryCode, packageName, timestamp);
+
+            // 异步处理邮件发送以避免阻塞
+            if (primaryCode != null) {
+                new Thread(() -> {
+                    try {
+                        Log.d(TAG, "Sending verification code email: " + primaryCode);
+                        smsMessage.setEmailForwardStatus(EmailForwardStatus.SENDING);
+                        smsDataManager.updateSmsMessage(smsMessage);
+
+                        emailSender.sendVerificationCodeEmail(
+                            primaryCode,
+                            content,
+                            sender,
+                            new EmailSender.EmailSendCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    Log.d(TAG, "Verification code email sent successfully");
+                                    smsMessage.setEmailForwardStatus(EmailForwardStatus.SUCCESS);
+                                    smsDataManager.updateSmsMessage(smsMessage);
+
+                                    // 广播状态更新给UI
+                                    broadcastStatusUpdate(smsMessage);
+                                }
+
+                                @Override
+                                public void onFailure(String error) {
+                                    Log.e(TAG, "Failed to send verification code email: " + error);
+                                    smsMessage.setEmailForwardStatus(EmailForwardStatus.FAILED);
+                                    smsDataManager.updateSmsMessage(smsMessage);
+
+                                    // 广播状态更新给UI
+                                    broadcastStatusUpdate(smsMessage);
+                                }
+                            }
+                        );
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error sending email", e);
+                        smsMessage.setEmailForwardStatus(EmailForwardStatus.FAILED);
+                        smsDataManager.updateSmsMessage(smsMessage);
+
+                        // 广播状态更新给UI
+                        broadcastStatusUpdate(smsMessage);
+                    }
+                }, "Email-Sending-" + System.currentTimeMillis()).start();
+            }
 
         } catch (Exception e) {
             Log.e(TAG, "Error processing SMS message", e);

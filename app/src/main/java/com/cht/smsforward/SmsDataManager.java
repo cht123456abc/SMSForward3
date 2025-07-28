@@ -2,6 +2,8 @@ package com.cht.smsforward;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -18,20 +20,39 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 管理SMS消息的持久化存储
+ * 管理SMS消息的持久化存储 - 优化版本
+ * 特性：
+ * - 内存缓存减少I/O操作
+ * - 异步数据库操作
+ * - 批量更新优化
+ * - 重复检测优化
  */
 public class SmsDataManager {
-    
+
     private static final String TAG = "SmsDataManager";
     private static final String PREFS_NAME = "sms_data";
     private static final String KEY_SMS_MESSAGES = "sms_messages";
     private static final int MAX_STORED_MESSAGES = 100; // 最多存储100条消息
-    
+
     private SharedPreferences prefs;
     private Gson gson;
-    
+
+    // 性能优化：内存缓存
+    private List<SmsMessage> cachedMessages;
+    private final AtomicBoolean cacheLoaded = new AtomicBoolean(false);
+    private final Object cacheLock = new Object();
+
+    // 异步操作
+    private HandlerThread backgroundThread;
+    private Handler backgroundHandler;
+
+    // 重复检测优化：使用哈希表快速查找
+    private final ConcurrentHashMap<String, Long> messageHashes = new ConcurrentHashMap<>();
+
     public SmsDataManager(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
@@ -39,6 +60,67 @@ public class SmsDataManager {
         gson = new GsonBuilder()
                 .registerTypeAdapter(EmailForwardStatus.class, new EmailForwardStatusAdapter())
                 .create();
+
+        // 初始化后台线程用于异步操作
+        backgroundThread = new HandlerThread("SmsDataManager-Background");
+        backgroundThread.start();
+        backgroundHandler = new Handler(backgroundThread.getLooper());
+
+        // 预加载缓存（异步）
+        backgroundHandler.post(this::preloadCache);
+    }
+
+    /**
+     * 预加载缓存以提高性能
+     */
+    private void preloadCache() {
+        synchronized (cacheLock) {
+            if (!cacheLoaded.get()) {
+                cachedMessages = loadSmsMessagesInternal();
+                buildMessageHashIndex();
+                cacheLoaded.set(true);
+                Log.d(TAG, "Cache preloaded with " + cachedMessages.size() + " messages");
+            }
+        }
+    }
+
+    /**
+     * 强制重新加载缓存（用于调试）
+     */
+    public void forceReloadCache() {
+        synchronized (cacheLock) {
+            cachedMessages = loadSmsMessagesInternal();
+            buildMessageHashIndex();
+            cacheLoaded.set(true);
+            Log.d(TAG, "Cache force reloaded with " + cachedMessages.size() + " messages");
+        }
+    }
+
+    /**
+     * 构建消息哈希索引用于快速重复检测
+     */
+    private void buildMessageHashIndex() {
+        messageHashes.clear();
+        for (SmsMessage message : cachedMessages) {
+            String hash = createMessageHash(message);
+            messageHashes.put(hash, message.getTimestamp());
+        }
+    }
+
+    /**
+     * 创建消息哈希用于重复检测
+     */
+    private String createMessageHash(SmsMessage message) {
+        return message.getContent() + "|" + message.getSender() + "|" + (message.getTimestamp() / 1000);
+    }
+
+    /**
+     * 清理资源
+     */
+    public void cleanup() {
+        if (backgroundThread != null) {
+            backgroundThread.quitSafely();
+        }
     }
 
     /**
@@ -57,9 +139,17 @@ public class SmsDataManager {
     }
     
     /**
-     * 保存SMS消息列表
+     * 保存SMS消息列表（优化版本 - 异步操作）
      */
     public void saveSmsMessages(List<SmsMessage> messages) {
+        // 异步保存以避免阻塞主线程
+        backgroundHandler.post(() -> saveSmsMessagesInternal(messages));
+    }
+
+    /**
+     * 内部同步保存方法
+     */
+    private void saveSmsMessagesInternal(List<SmsMessage> messages) {
         try {
             // 按时间戳降序排序（最新的在前面）
             List<SmsMessage> sortedMessages = new ArrayList<>(messages);
@@ -73,6 +163,13 @@ public class SmsDataManager {
 
             String json = gson.toJson(messagesToSave);
             prefs.edit().putString(KEY_SMS_MESSAGES, json).apply();
+
+            // 更新缓存
+            synchronized (cacheLock) {
+                cachedMessages = new ArrayList<>(messagesToSave);
+                buildMessageHashIndex();
+            }
+
             Log.d(TAG, "Saved " + messagesToSave.size() + " SMS messages (sorted by timestamp)");
         } catch (Exception e) {
             Log.e(TAG, "Error saving SMS messages", e);
@@ -80,9 +177,24 @@ public class SmsDataManager {
     }
     
     /**
-     * 加载SMS消息列表
+     * 加载SMS消息列表（优化版本 - 使用缓存）
      */
     public List<SmsMessage> loadSmsMessages() {
+        synchronized (cacheLock) {
+            if (cacheLoaded.get() && cachedMessages != null) {
+                // 返回缓存副本以避免并发修改
+                return new ArrayList<>(cachedMessages);
+            }
+        }
+
+        // 缓存未加载，同步加载
+        return loadSmsMessagesInternal();
+    }
+
+    /**
+     * 内部加载方法（从存储读取）
+     */
+    private List<SmsMessage> loadSmsMessagesInternal() {
         try {
             String json = prefs.getString(KEY_SMS_MESSAGES, null);
             if (json != null) {
@@ -112,32 +224,54 @@ public class SmsDataManager {
     }
     
     /**
-     * 添加新的SMS消息（带重复检测）
+     * 添加新的SMS消息（优化版本 - 快速重复检测，同步保存以确保UI及时更新）
      */
     public void addSmsMessage(SmsMessage newMessage) {
-        List<SmsMessage> messages = loadSmsMessages();
+        synchronized (cacheLock) {
+            // 快速重复检测使用哈希表
+            String messageHash = createMessageHash(newMessage);
+            Long existingTimestamp = messageHashes.get(messageHash);
 
-        // 检查是否已存在相同的消息（基于内容、发送者和时间戳）
-        for (SmsMessage existingMessage : messages) {
-            if (isDuplicateMessage(existingMessage, newMessage)) {
-                Log.d(TAG, "Duplicate message detected - skipping: " + newMessage.getSender() + " at " + newMessage.getFormattedTimestamp());
-                return; // 跳过重复消息
+            if (existingTimestamp != null) {
+                // 检查时间差是否在容忍范围内（1秒）
+                long timeDiff = Math.abs(existingTimestamp - newMessage.getTimestamp());
+                if (timeDiff <= 1000) {
+                    Log.d(TAG, "Duplicate message detected (fast check) - skipping: " + newMessage.getSender());
+                    return;
+                }
             }
-        }
 
-        // 找到正确的插入位置（按时间戳降序）
-        int insertIndex = 0;
-        for (int i = 0; i < messages.size(); i++) {
-            if (newMessage.getTimestamp() > messages.get(i).getTimestamp()) {
-                insertIndex = i;
-                break;
+            // 确保缓存已加载
+            if (!cacheLoaded.get()) {
+                cachedMessages = loadSmsMessagesInternal();
+                buildMessageHashIndex();
+                cacheLoaded.set(true);
             }
-            insertIndex = i + 1;
-        }
 
-        messages.add(insertIndex, newMessage);
-        saveSmsMessages(messages);
-        Log.d(TAG, "New SMS message added - Sender: " + newMessage.getSender() + " at " + newMessage.getFormattedTimestamp());
+            // 获取当前消息列表（使用缓存）
+            List<SmsMessage> messages = new ArrayList<>(cachedMessages);
+
+            // 找到正确的插入位置（按时间戳降序）
+            int insertIndex = 0;
+            for (int i = 0; i < messages.size(); i++) {
+                if (newMessage.getTimestamp() > messages.get(i).getTimestamp()) {
+                    insertIndex = i;
+                    break;
+                }
+                insertIndex = i + 1;
+            }
+
+            // 添加到列表和哈希索引
+            messages.add(insertIndex, newMessage);
+            messageHashes.put(messageHash, newMessage.getTimestamp());
+
+            // 立即更新缓存
+            cachedMessages = new ArrayList<>(messages);
+
+            // 同步保存到存储
+            saveSmsMessagesInternal(messages);
+            Log.d(TAG, "New SMS message added - Sender: " + newMessage.getSender() + " at " + newMessage.getFormattedTimestamp() + ", total messages: " + messages.size());
+        }
     }
 
     /**
@@ -155,12 +289,32 @@ public class SmsDataManager {
     }
     
     /**
-     * 更新现有的SMS消息
+     * 更新现有的SMS消息（优化版本 - 减少I/O操作）
      */
     public void updateSmsMessage(SmsMessage updatedMessage) {
-        List<SmsMessage> messages = loadSmsMessages();
+        synchronized (cacheLock) {
+            if (cacheLoaded.get() && cachedMessages != null) {
+                // 在缓存中查找并更新
+                for (int i = 0; i < cachedMessages.size(); i++) {
+                    SmsMessage message = cachedMessages.get(i);
+                    if (message.getTimestamp() == updatedMessage.getTimestamp() &&
+                        message.getSender().equals(updatedMessage.getSender()) &&
+                        message.getContent().equals(updatedMessage.getContent())) {
 
-        // 查找并更新匹配的消息（基于时间戳和发送者）
+                        cachedMessages.set(i, updatedMessage);
+
+                        // 异步保存到存储
+                        backgroundHandler.post(() -> saveSmsMessagesInternal(new ArrayList<>(cachedMessages)));
+
+                        Log.d(TAG, "Updated SMS message with email status: " + updatedMessage.getEmailForwardStatus());
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 回退到原始方法（如果缓存未加载）
+        List<SmsMessage> messages = loadSmsMessages();
         for (int i = 0; i < messages.size(); i++) {
             SmsMessage message = messages.get(i);
             if (message.getTimestamp() == updatedMessage.getTimestamp() &&
@@ -177,10 +331,21 @@ public class SmsDataManager {
     }
 
     /**
-     * 清除所有SMS消息
+     * 清除所有SMS消息（优化版本）
      */
     public void clearSmsMessages() {
-        prefs.edit().remove(KEY_SMS_MESSAGES).apply();
-        Log.d(TAG, "Cleared all SMS messages");
+        // 清除缓存
+        synchronized (cacheLock) {
+            if (cachedMessages != null) {
+                cachedMessages.clear();
+            }
+            messageHashes.clear();
+        }
+
+        // 异步清除存储
+        backgroundHandler.post(() -> {
+            prefs.edit().remove(KEY_SMS_MESSAGES).apply();
+            Log.d(TAG, "Cleared all SMS messages");
+        });
     }
 }

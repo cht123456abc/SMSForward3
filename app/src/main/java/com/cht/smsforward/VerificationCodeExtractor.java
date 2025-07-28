@@ -54,27 +54,37 @@ public class VerificationCodeExtractor {
     public static final int HIGHLIGHT_TEXT_COLOR = 0xFF000000;       // Black text
     
     /**
-     * Extract all potential verification codes from SMS content
+     * Extract all potential verification codes from SMS content (优化版本)
      */
     public static List<String> extractVerificationCodes(String smsContent) {
         List<String> codes = new ArrayList<>();
-        
+
         if (smsContent == null || smsContent.trim().isEmpty()) {
             return codes;
         }
-        
-        // Log.d(TAG, "Extracting verification codes from: " + smsContent);
 
-        // Step 1: Check if SMS content contains verification-related keywords
-        // Core principle: No verification keywords = No verification codes
-        boolean hasVerificationContext = hasVerificationKeywords(smsContent);
-        if (!hasVerificationContext) {
-            // No verification keywords found, return empty result immediately
-            return codes;
+        // 性能优化：预先检查长度，避免处理过长的消息
+        if (smsContent.length() > 500) {
+            smsContent = smsContent.substring(0, 500); // 截取前500字符
         }
 
-        // Step 2: Extract verification codes using pattern matching
-        for (Pattern pattern : VERIFICATION_PATTERNS) {
+        // Step 1: 快速关键词检查
+        boolean hasVerificationContext = hasVerificationKeywords(smsContent);
+        if (!hasVerificationContext) {
+            return codes; // 早期返回，避免不必要的正则处理
+        }
+
+        // Step 2: 优化的模式匹配 - 按优先级顺序，找到第一个匹配就停止某些模式
+        boolean foundHighPriorityCode = false;
+
+        for (int i = 0; i < VERIFICATION_PATTERNS.length; i++) {
+            Pattern pattern = VERIFICATION_PATTERNS[i];
+
+            // 对于高优先级模式（前3个），如果已经找到代码就跳过低优先级模式
+            if (foundHighPriorityCode && i >= 3) {
+                break;
+            }
+
             Matcher matcher = pattern.matcher(smsContent);
 
             while (matcher.find()) {
@@ -90,31 +100,46 @@ public class VerificationCodeExtractor {
                 if (code != null && isValidVerificationCode(code, hasVerificationContext)) {
                     if (!codes.contains(code)) {
                         codes.add(code);
-                        // Log.d(TAG, "Found verification code: " + code);
+
+                        // 如果是高优先级模式（前3个）找到了代码，标记为已找到
+                        if (i < 3) {
+                            foundHighPriorityCode = true;
+                        }
+
+                        // 性能优化：如果找到了明确的验证码，不需要继续搜索
+                        if (i < 2 && code.matches("\\d{4,8}")) {
+                            return codes; // 早期返回
+                        }
                     }
                 }
             }
         }
-        
+
         return codes;
     }
     
     /**
-     * Create highlighted text with verification codes marked
+     * Create highlighted text with verification codes marked (优化版本)
      */
     public static SpannableString createHighlightedText(String smsContent) {
         SpannableString spannableString = new SpannableString(smsContent);
-        
+
         if (smsContent == null || smsContent.trim().isEmpty()) {
             return spannableString;
         }
-        
+
+        // 性能优化：只在UI需要时才进行高亮处理
+        // 如果没有验证码关键词，直接返回原始文本
+        if (!hasVerificationKeywords(smsContent)) {
+            return spannableString;
+        }
+
         List<String> codes = extractVerificationCodes(smsContent);
-        
+
         for (String code : codes) {
             highlightCodeInText(spannableString, code);
         }
-        
+
         return spannableString;
     }
     
@@ -160,13 +185,15 @@ public class VerificationCodeExtractor {
     }
     
     /**
-     * Check if SMS content contains verification-related keywords
+     * Check if SMS content contains verification-related keywords (优化版本)
      */
     private static boolean hasVerificationKeywords(String smsContent) {
+        // 性能优化：避免重复的toLowerCase调用
         String lowerContent = smsContent.toLowerCase();
 
+        // 优化：使用更高效的字符串搜索
         for (String keyword : VERIFICATION_KEYWORDS) {
-            if (lowerContent.contains(keyword.toLowerCase())) {
+            if (lowerContent.indexOf(keyword.toLowerCase()) != -1) {
                 return true;
             }
         }

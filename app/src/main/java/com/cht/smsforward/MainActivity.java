@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private static final String SMS_RECEIVED_ACTION = "com.cht.smsforward.SMS_RECEIVED";
+    private static final String SMS_STATUS_UPDATE_ACTION = "com.cht.smsforward.SMS_STATUS_UPDATE";
 
     private TextView notificationStatusText;
     private TextView emailStatusText;
@@ -83,12 +84,23 @@ public class MainActivity extends AppCompatActivity {
 
         // Re-register broadcast receiver (LocalBroadcastManager only)
         if (smsBroadcastReceiver != null) {
-            IntentFilter filter = new IntentFilter(SMS_RECEIVED_ACTION);
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(SMS_RECEIVED_ACTION);
+            filter.addAction(SMS_STATUS_UPDATE_ACTION);
             LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver, filter);
         }
 
         // Reload messages from storage to sync with any background processing
         loadSavedMessages();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // 清理SmsDataManager资源
+        if (smsDataManager != null) {
+            smsDataManager.cleanup();
+        }
     }
 
     @Override
@@ -149,7 +161,9 @@ public class MainActivity extends AppCompatActivity {
      */
     private void setupSmsBroadcastReceiver() {
         smsBroadcastReceiver = new SmsBroadcastReceiver();
-        IntentFilter filter = new IntentFilter(SMS_RECEIVED_ACTION);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(SMS_RECEIVED_ACTION);
+        filter.addAction(SMS_STATUS_UPDATE_ACTION);
 
         // Register with LocalBroadcastManager only (simplified approach)
         LocalBroadcastManager.getInstance(this).registerReceiver(smsBroadcastReceiver, filter);
@@ -287,6 +301,11 @@ public class MainActivity extends AppCompatActivity {
      * Handle UI notification of new SMS (reload from storage)
      */
     private void handleNewSmsNotification(Intent intent) {
+        Log.d(TAG, "Handling new SMS notification");
+
+        // 强制重新加载缓存以确保获取最新数据
+        smsDataManager.forceReloadCache();
+
         // Simply reload messages from storage to sync UI
         // The actual processing and storage is handled by SmsNotificationListener
         loadSavedMessages();
@@ -296,6 +315,8 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<String> verificationCodes = intent.getStringArrayListExtra("verification_codes");
         List<String> codes = verificationCodes != null ? verificationCodes : new ArrayList<>();
 
+        Log.d(TAG, "SMS notification details - Primary code: " + primaryCode + ", Codes count: " + codes.size());
+
         if (primaryCode != null) {
             showToast(getString(R.string.toast_new_verification_code, primaryCode));
         } else if (!codes.isEmpty()) {
@@ -304,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
             showToast(getString(R.string.toast_new_sms));
         }
 
-        Log.d(TAG, "UI updated for new SMS notification");
+        Log.d(TAG, "UI updated for new SMS notification - Current adapter count: " + smsAdapter.getItemCount());
     }
 
 
@@ -324,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
             smsAdapter.addSmsMessage(message);
         }
         updateEmptyState();
-        Log.d(TAG, "Loaded " + savedMessages.size() + " saved SMS messages (sorted by timestamp)");
+        Log.d(TAG, "Loaded " + savedMessages.size() + " saved SMS messages");
     }
 
     /**
@@ -352,15 +373,33 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             Log.e(TAG, "=== BROADCAST RECEIVED ===");
             Log.e(TAG, "Intent action: " + intent.getAction());
-            Log.e(TAG, "Expected action: " + SMS_RECEIVED_ACTION);
 
             if (SMS_RECEIVED_ACTION.equals(intent.getAction())) {
                 Log.e(TAG, "SMS broadcast received - updating UI");
                 handleNewSmsNotification(intent);
+            } else if (SMS_STATUS_UPDATE_ACTION.equals(intent.getAction())) {
+                Log.e(TAG, "SMS status update received - refreshing UI");
+                handleSmsStatusUpdate(intent);
             } else {
-                Log.e(TAG, "Broadcast action mismatch - ignoring");
+                Log.e(TAG, "Broadcast action mismatch - ignoring: " + intent.getAction());
             }
         }
+    }
+
+    /**
+     * Handle SMS status update notification
+     */
+    private void handleSmsStatusUpdate(Intent intent) {
+        Log.d(TAG, "Handling SMS status update");
+
+        // 强制重新加载缓存以确保获取最新状态
+        smsDataManager.forceReloadCache();
+
+        // 重新加载消息以更新UI中的状态
+        loadSavedMessages();
+
+        String emailStatus = intent.getStringExtra("email_status");
+        Log.d(TAG, "SMS status updated to: " + emailStatus);
     }
 
 

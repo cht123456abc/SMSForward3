@@ -24,13 +24,20 @@ import javax.mail.internet.MimeMessage;
  */
 public class EmailSender {
     private static final String TAG = "EmailSender";
-    
+
     private Context context;
     private EmailSettingsManager settingsManager;
-    
+
+    // 协议偏好跟踪（用于优化重试顺序）
+    private static final String PREF_PROTOCOL_SUCCESS = "email_protocol_success";
+    private static final String PREF_SSL_SUCCESS_COUNT = "ssl_success_count";
+    private static final String PREF_TLS_SUCCESS_COUNT = "tls_success_count";
+    private android.content.SharedPreferences protocolPrefs;
+
     public EmailSender(Context context) {
         this.context = context.getApplicationContext();
         this.settingsManager = new EmailSettingsManager(context);
+        this.protocolPrefs = context.getSharedPreferences(PREF_PROTOCOL_SUCCESS, Context.MODE_PRIVATE);
     }
     
     /**
@@ -58,7 +65,7 @@ public class EmailSender {
             }
 
             Log.d(TAG, "Sending verification code email - Code: " + verificationCode + ", Sender: " + sender);
-            new SendEmailTask(config, verificationCode, smsContent, sender, callback).execute();
+            new SendEmailTask(config, verificationCode, smsContent, sender, callback, protocolPrefs).execute();
         } catch (Exception e) {
             String error = "Failed to initiate email sending: " + e.getMessage();
             Log.e(TAG, error, e);
@@ -80,7 +87,7 @@ public class EmailSender {
             return;
         }
         
-        new SendTestEmailTask(config, callback).execute();
+        new SendTestEmailTask(config, callback, protocolPrefs).execute();
     }
     
     /**
@@ -92,13 +99,15 @@ public class EmailSender {
         private String smsContent;
         private String sender;
         private EmailSendCallback callback;
-        
-        public SendEmailTask(EmailConfig config, String verificationCode, String smsContent, String sender, EmailSendCallback callback) {
+        private android.content.SharedPreferences protocolPrefs;
+
+        public SendEmailTask(EmailConfig config, String verificationCode, String smsContent, String sender, EmailSendCallback callback, android.content.SharedPreferences protocolPrefs) {
             this.config = config;
             this.verificationCode = verificationCode;
             this.smsContent = smsContent;
             this.sender = sender;
             this.callback = callback;
+            this.protocolPrefs = protocolPrefs;
         }
         
         @Override
@@ -107,23 +116,46 @@ public class EmailSender {
         }
 
         /**
-         * Send verification email with retry mechanism
+         * Send verification email with optimized retry mechanism
          */
         private String sendVerificationEmailWithRetry() {
             String lastError = null;
 
-            // Try TLS first (port 587)
-            lastError = attemptVerificationEmailSend(false);
-            if (lastError == null) {
-                return null; // Success
-            }
+            // 优化：根据历史成功记录选择首选协议
+            boolean preferSSL = shouldPreferSSL(protocolPrefs);
 
-            Log.w(TAG, "TLS attempt failed, trying SSL: " + lastError);
+            if (preferSSL) {
+                // 先尝试SSL（如果历史记录显示SSL更可靠）
+                lastError = attemptVerificationEmailSend(true);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(true, protocolPrefs);
+                    return null; // Success
+                }
 
-            // If TLS fails, try SSL (port 465)
-            lastError = attemptVerificationEmailSend(true);
-            if (lastError == null) {
-                return null; // Success
+                Log.w(TAG, "SSL attempt failed, trying TLS: " + lastError);
+
+                // SSL失败，尝试TLS
+                lastError = attemptVerificationEmailSend(false);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(false, protocolPrefs);
+                    return null; // Success
+                }
+            } else {
+                // 先尝试TLS（默认）
+                lastError = attemptVerificationEmailSend(false);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(false, protocolPrefs);
+                    return null; // Success
+                }
+
+                Log.w(TAG, "TLS attempt failed, trying SSL: " + lastError);
+
+                // TLS失败，尝试SSL
+                lastError = attemptVerificationEmailSend(true);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(true, protocolPrefs);
+                    return null; // Success
+                }
             }
 
             Log.e(TAG, "Both TLS and SSL attempts failed");
@@ -187,10 +219,12 @@ public class EmailSender {
     private static class SendTestEmailTask extends AsyncTask<Void, Void, String> {
         private EmailConfig config;
         private EmailSendCallback callback;
-        
-        public SendTestEmailTask(EmailConfig config, EmailSendCallback callback) {
+        private android.content.SharedPreferences protocolPrefs;
+
+        public SendTestEmailTask(EmailConfig config, EmailSendCallback callback, android.content.SharedPreferences protocolPrefs) {
             this.config = config;
             this.callback = callback;
+            this.protocolPrefs = protocolPrefs;
         }
         
         @Override
@@ -204,18 +238,41 @@ public class EmailSender {
         private String sendTestEmailWithRetry() {
             String lastError = null;
 
-            // Try TLS first (port 587)
-            lastError = attemptTestEmailSend(false);
-            if (lastError == null) {
-                return null; // Success
-            }
+            // 优化：根据历史成功记录选择首选协议
+            boolean preferSSL = shouldPreferSSL(protocolPrefs);
 
-            Log.w(TAG, "TLS attempt failed, trying SSL: " + lastError);
+            if (preferSSL) {
+                // 先尝试SSL（如果历史记录显示SSL更可靠）
+                lastError = attemptTestEmailSend(true);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(true, protocolPrefs);
+                    return null; // Success
+                }
 
-            // If TLS fails, try SSL (port 465)
-            lastError = attemptTestEmailSend(true);
-            if (lastError == null) {
-                return null; // Success
+                Log.w(TAG, "SSL attempt failed, trying TLS: " + lastError);
+
+                // SSL失败，尝试TLS
+                lastError = attemptTestEmailSend(false);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(false, protocolPrefs);
+                    return null; // Success
+                }
+            } else {
+                // 先尝试TLS（默认）
+                lastError = attemptTestEmailSend(false);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(false, protocolPrefs);
+                    return null; // Success
+                }
+
+                Log.w(TAG, "TLS attempt failed, trying SSL: " + lastError);
+
+                // TLS失败，尝试SSL
+                lastError = attemptTestEmailSend(true);
+                if (lastError == null) {
+                    recordSuccessfulProtocol(true, protocolPrefs);
+                    return null; // Success
+                }
             }
 
             Log.e(TAG, "Both TLS and SSL attempts failed");
@@ -330,14 +387,22 @@ public class EmailSender {
             props.put("mail.smtp.starttls.required", "true");
         }
 
-        // Enhanced timeout and connection settings
-        props.put("mail.smtp.connectiontimeout", "10000"); // 10 seconds connection timeout
-        props.put("mail.smtp.timeout", "10000"); // 10 seconds read timeout
-        props.put("mail.smtp.writetimeout", "10000"); // 10 seconds write timeout
+        // 优化的超时设置 - 更激进的超时以减少延迟
+        props.put("mail.smtp.connectiontimeout", "5000"); // 5秒连接超时（从10秒减少）
+        props.put("mail.smtp.timeout", "5000"); // 5秒读取超时（从10秒减少）
+        props.put("mail.smtp.writetimeout", "5000"); // 5秒写入超时（从10秒减少）
 
-        // Additional reliability settings
+        // 连接池和性能优化
+        props.put("mail.smtp.connectionpoolsize", "10"); // 连接池大小
+        props.put("mail.smtp.connectionpooltimeout", "300000"); // 5分钟连接池超时
+
+        // 额外的可靠性设置
         props.put("mail.smtp.ssl.trust", EmailConfig.QQ_SMTP_HOST);
         props.put("mail.smtp.ssl.protocols", "TLSv1.2");
+
+        // 性能优化设置
+        props.put("mail.smtp.sendpartial", "true"); // 允许部分发送
+        props.put("mail.smtp.quitwait", "false"); // 不等待QUIT命令响应
 
         Log.d(TAG, "Creating email session with " + (useSSL ? "SSL" : "TLS") + " configuration");
 
@@ -362,7 +427,29 @@ public class EmailSender {
         body.append("- Received: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date())).append("\n");
         body.append("- Full Message: ").append(smsContent).append("\n\n");
         body.append("This email was automatically sent by SMS Forward app.");
-        
+
         return body.toString();
+    }
+
+    /**
+     * 检查是否应该优先使用SSL协议
+     */
+    private static boolean shouldPreferSSL(android.content.SharedPreferences prefs) {
+        int sslSuccessCount = prefs.getInt(PREF_SSL_SUCCESS_COUNT, 0);
+        int tlsSuccessCount = prefs.getInt(PREF_TLS_SUCCESS_COUNT, 0);
+
+        // 如果SSL成功次数明显多于TLS，则优先使用SSL
+        return sslSuccessCount > tlsSuccessCount + 2;
+    }
+
+    /**
+     * 记录成功的协议类型
+     */
+    private static void recordSuccessfulProtocol(boolean useSSL, android.content.SharedPreferences prefs) {
+        String key = useSSL ? PREF_SSL_SUCCESS_COUNT : PREF_TLS_SUCCESS_COUNT;
+        int currentCount = prefs.getInt(key, 0);
+        prefs.edit().putInt(key, currentCount + 1).apply();
+
+        Log.d(TAG, "Recorded successful " + (useSSL ? "SSL" : "TLS") + " connection");
     }
 }
