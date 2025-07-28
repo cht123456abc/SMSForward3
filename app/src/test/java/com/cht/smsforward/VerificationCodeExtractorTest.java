@@ -1,5 +1,6 @@
 package com.cht.smsforward;
 
+import com.cht.smsforward.util.VerificationCodeExtractor;
 import org.junit.Test;
 import java.util.List;
 import static org.junit.Assert.*;

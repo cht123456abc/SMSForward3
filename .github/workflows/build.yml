@@ -59,7 +59,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: debug-apk
-        path: app/build/outputs/apk/debug/smsforward-v*-debug.apk
+        path: app/build/outputs/apk/debug/smsforward-v*.apk
 
     - name: Run Lint
       run: ./gradlew lint

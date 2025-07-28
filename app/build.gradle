@@ -60,7 +60,8 @@ android {
             if (buildType == "release") {
                 outputFileName = "smsforward-v${versionName}.apk"
             } else if (buildType == "debug") {
-                outputFileName = "smsforward-v${versionName}-debug.apk"
+                // versionName already includes "-debug" suffix, so don't add it again
+                outputFileName = "smsforward-v${versionName}.apk"
             }
         }
     }
