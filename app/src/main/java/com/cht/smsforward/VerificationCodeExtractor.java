@@ -24,8 +24,11 @@ public class VerificationCodeExtractor {
         // Codes with specific keywords (highest priority)
         Pattern.compile("(?i)(?:code|verification|verify|pin|otp)[:\\s]*([A-Za-z0-9]{4,8})"),
 
-        // Chinese/international verification code patterns
-        Pattern.compile("(?i)(?:验证码|驗證碼|認證碼|认证码)[:\\s：]*([A-Za-z0-9]{4,8})"),
+        // Chinese/international verification code patterns - enhanced for "为" keyword
+        Pattern.compile("(?i)(?:验证码|驗證碼|認證碼|认证码)(?:为|為|是|：|:)\\s*([A-Za-z0-9]{4,8})"),
+
+        // Additional Chinese pattern for "您的验证码为XXXX" format
+        Pattern.compile("(?i)您的验证码为([A-Za-z0-9]{4,8})"),
 
         // Codes in parentheses or brackets
         Pattern.compile("[\\(\\[]([A-Za-z0-9]{4,8})[\\)\\]]"),
@@ -42,8 +45,8 @@ public class VerificationCodeExtractor {
     
     // Keywords that indicate verification codes (for context filtering)
     private static final String[] VERIFICATION_KEYWORDS = {
-        "verification", "verify", "code", "pin", "otp", "auth", "login", "signin",
-        "验证码", "驗證碼", "認證碼", "认证码", "密码", "登录", "登錄"
+        "verification", "verify", "code", "pin", "otp", "auth",
+        "验证码", "驗證碼", "認證碼", "认证码"
     };
     
     // Colors for highlighting (will be used in UI)
@@ -60,28 +63,34 @@ public class VerificationCodeExtractor {
             return codes;
         }
         
-        Log.d(TAG, "Extracting verification codes from: " + smsContent);
-        
-        // Check if SMS content contains verification-related keywords
+        // Log.d(TAG, "Extracting verification codes from: " + smsContent);
+
+        // Step 1: Check if SMS content contains verification-related keywords
+        // Core principle: No verification keywords = No verification codes
         boolean hasVerificationContext = hasVerificationKeywords(smsContent);
-        
+        if (!hasVerificationContext) {
+            // No verification keywords found, return empty result immediately
+            return codes;
+        }
+
+        // Step 2: Extract verification codes using pattern matching
         for (Pattern pattern : VERIFICATION_PATTERNS) {
             Matcher matcher = pattern.matcher(smsContent);
-            
+
             while (matcher.find()) {
                 String code;
-                
+
                 // Some patterns have groups, others match the entire pattern
                 if (matcher.groupCount() > 0) {
                     code = matcher.group(1); // Get the captured group
                 } else {
                     code = matcher.group(0); // Get the entire match
                 }
-                
+
                 if (code != null && isValidVerificationCode(code, hasVerificationContext)) {
                     if (!codes.contains(code)) {
                         codes.add(code);
-                        Log.d(TAG, "Found verification code: " + code);
+                        // Log.d(TAG, "Found verification code: " + code);
                     }
                 }
             }
@@ -143,7 +152,7 @@ public class VerificationCodeExtractor {
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                 );
                 
-                Log.d(TAG, "Highlighted verification code: " + code + " at position " + index);
+                // Log.d(TAG, "Highlighted verification code: " + code + " at position " + index);
             }
             
             startIndex = index + 1;
@@ -155,15 +164,17 @@ public class VerificationCodeExtractor {
      */
     private static boolean hasVerificationKeywords(String smsContent) {
         String lowerContent = smsContent.toLowerCase();
-        
+
         for (String keyword : VERIFICATION_KEYWORDS) {
             if (lowerContent.contains(keyword.toLowerCase())) {
                 return true;
             }
         }
-        
+
         return false;
     }
+
+
     
     /**
      * Validate if a potential code is actually a verification code
@@ -197,15 +208,15 @@ public class VerificationCodeExtractor {
             return false;
         }
 
-        // If no verification context, be more strict
+        // If no verification context, be more strict (this should not happen due to step 1 check)
         if (!hasVerificationContext) {
-            // Must be all digits for non-verification context
             return code.matches("\\d{4,8}");
         }
 
-        // With verification context, allow alphanumeric but prefer numeric
+        // With verification context, allow alphanumeric codes
         return code.matches("[A-Za-z0-9]{4,8}");
     }
+
     
     /**
      * Get the most likely verification code from extracted codes
