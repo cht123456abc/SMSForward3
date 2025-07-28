@@ -153,11 +153,14 @@ public class ConfigurationManager<T extends ForwardingConfig> {
         if (encryptedPrefs == null) {
             return false;
         }
-        
+
         try {
-            SharedPreferences.Editor editor = encryptedPrefs.edit();
-            editor.putBoolean("enabled", enabled);
-            boolean success = editor.commit();
+            // Load current config to preserve other settings
+            T currentConfig = loadConfig();
+            currentConfig.setEnabled(enabled);
+
+            // Save the complete config with updated enabled status
+            boolean success = saveConfig(currentConfig);
             Log.d(TAG, configType + " enabled status updated: " + enabled + ", success: " + success);
             return success;
         } catch (Exception e) {
