@@ -9,7 +9,7 @@
     <string name="notification_access_required">⚠ 需要启用通知访问权限</string>
     <string name="email_forwarding_enabled">✓ 邮件转发已启用 - 准备转发短信</string>
     <string name="email_forwarding_disabled">⚠ 邮件转发未启用</string>
-    <string name="serverchan_forwarding_enabled">✓ Server酱转发已启用 - 准备推送短信</string>
+    <string name="serverchan_forwarding_enabled">✓ Server酱转发已启用 - 准备转发短信</string>
     <string name="serverchan_forwarding_disabled">⚠ Server酱转发未启用</string>
     <string name="forwarding_enabled">✓ 转发功能已启用 - 准备转发短信</string>
     <string name="forwarding_disabled">⚠ 转发功能未启用</string>
