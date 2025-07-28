@@ -56,11 +56,9 @@ public class SmsDataManager {
     public SmsDataManager(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-        // Create Gson with custom ForwardStatus serializer/deserializer (and legacy adapters for backward compatibility)
+        // Create Gson with custom ForwardStatus serializer/deserializer
         gson = new GsonBuilder()
                 .registerTypeAdapter(ForwardStatus.class, new ForwardStatusAdapter())
-                .registerTypeAdapter(EmailForwardStatus.class, new EmailForwardStatusAdapter())
-                .registerTypeAdapter(ServerChanForwardStatus.class, new ServerChanForwardStatusAdapter())
                 .create();
 
         // 初始化后台线程用于异步操作
@@ -140,35 +138,7 @@ public class SmsDataManager {
         }
     }
 
-    /**
-     * Custom Gson adapter for EmailForwardStatus enum (legacy support)
-     */
-    private static class EmailForwardStatusAdapter implements JsonSerializer<EmailForwardStatus>, JsonDeserializer<EmailForwardStatus> {
-        @Override
-        public JsonElement serialize(EmailForwardStatus src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(src.getValue());
-        }
 
-        @Override
-        public EmailForwardStatus deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return EmailForwardStatus.fromValue(json.getAsString());
-        }
-    }
-
-    /**
-     * Custom Gson adapter for ServerChanForwardStatus enum
-     */
-    private static class ServerChanForwardStatusAdapter implements JsonSerializer<ServerChanForwardStatus>, JsonDeserializer<ServerChanForwardStatus> {
-        @Override
-        public JsonElement serialize(ServerChanForwardStatus src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(src.getValue());
-        }
-
-        @Override
-        public ServerChanForwardStatus deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return ServerChanForwardStatus.fromValue(json.getAsString());
-        }
-    }
     
     /**
      * 保存SMS消息列表（优化版本 - 异步操作）
@@ -233,18 +203,8 @@ public class SmsDataManager {
                 Type listType = new TypeToken<List<SmsMessage>>(){}.getType();
                 List<SmsMessage> messages = gson.fromJson(json, listType);
 
-                // Post-process messages to ensure proper initialization
+                // Messages are now properly initialized in their constructors
                 if (messages != null) {
-                    for (SmsMessage message : messages) {
-                        // Ensure email forward status is properly initialized
-                        if (message.getEmailForwardStatus() == null) {
-                            if (message.hasVerificationCodes()) {
-                                message.setEmailForwardStatus(EmailForwardStatus.NOT_SENT);
-                            } else {
-                                message.setEmailForwardStatus(EmailForwardStatus.DISABLED);
-                            }
-                        }
-                    }
                     Log.d(TAG, "Loaded " + messages.size() + " SMS messages");
                     return messages;
                 }

@@ -29,7 +29,6 @@ public class MessageQueue {
     public MessageQueue(Context context) {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         gson = new GsonBuilder()
-                .registerTypeAdapter(EmailForwardStatus.class, new EmailForwardStatusAdapter())
                 .create();
     }
     
@@ -119,26 +118,7 @@ public class MessageQueue {
         return getQueueSize() == 0;
     }
     
-    /**
-     * Custom Gson adapter for EmailForwardStatus enum
-     */
-    private static class EmailForwardStatusAdapter implements 
-            com.google.gson.JsonSerializer<EmailForwardStatus>, 
-            com.google.gson.JsonDeserializer<EmailForwardStatus> {
-        
-        @Override
-        public com.google.gson.JsonElement serialize(EmailForwardStatus src, Type typeOfSrc, 
-                com.google.gson.JsonSerializationContext context) {
-            return new com.google.gson.JsonPrimitive(src.getValue());
-        }
-        
-        @Override
-        public EmailForwardStatus deserialize(com.google.gson.JsonElement json, Type typeOfT, 
-                com.google.gson.JsonDeserializationContext context) 
-                throws com.google.gson.JsonParseException {
-            return EmailForwardStatus.fromValue(json.getAsString());
-        }
-    }
+
 }
 
 /**

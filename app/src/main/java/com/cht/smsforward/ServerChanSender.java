@@ -17,158 +17,83 @@ import java.util.Locale;
 /**
  * Server酱 sender utility for sending verification codes via Server酱 API
  */
-public class ServerChanSender {
-    private static final String TAG = "ServerChanSender";
-    
-    private Context context;
-    private ServerChanSettingsManager settingsManager;
-    
+public class ServerChanSender extends MessageSender<ServerChanConfig> {
+
     // HTTP connection timeout settings
     private static final int CONNECTION_TIMEOUT = 10000; // 10 seconds
     private static final int READ_TIMEOUT = 15000; // 15 seconds
-    
+
     public ServerChanSender(Context context) {
-        this.context = context;
-        this.settingsManager = new ServerChanSettingsManager(context);
+        super(context, "ServerChanSender");
     }
-    
+
     /**
-     * Callback interface for Server酱 send operations
+     * Callback interface for Server酱 send operations (for backward compatibility)
      */
-    public interface ServerChanSendCallback {
-        void onSuccess();
-        void onFailure(String error);
+    public interface ServerChanSendCallback extends SendCallback {
     }
     
     /**
-     * Send verification code message to Server酱 asynchronously
+     * Send verification code message to Server酱 asynchronously (backward compatibility wrapper)
      */
     public void sendVerificationCodeMessage(String verificationCode, String smsContent, String sender, ServerChanSendCallback callback) {
-        try {
-            ServerChanConfig config = settingsManager.loadServerChanConfig();
-            
-            if (!config.isValid() || !config.isEnabled()) {
-                String error = "Server酱 configuration is invalid or disabled";
-                Log.w(TAG, error + " - Config: " + config.toString());
-                if (callback != null) {
-                    callback.onFailure(error);
-                }
-                return;
-            }
-            
-            Log.d(TAG, "Sending verification code to Server酱 - Code: " + verificationCode + ", Sender: " + sender);
-            new SendMessageTask(config, verificationCode, smsContent, sender, callback).execute();
-        } catch (Exception e) {
-            String error = "Failed to initiate Server酱 sending: " + e.getMessage();
-            Log.e(TAG, error, e);
-            if (callback != null) {
-                callback.onFailure(error);
-            }
-        }
+        sendVerificationCodeMessage(verificationCode, smsContent, sender, (SendCallback) callback);
     }
-    
+
     /**
-     * Test Server酱 connection and send a test message
+     * Test Server酱 connection and send a test message (backward compatibility wrapper)
      */
     public void sendTestMessage(ServerChanConfig config, ServerChanSendCallback callback) {
-        if (!config.isValid()) {
-            Log.e(TAG, "Server酱 configuration is invalid for testing");
-            if (callback != null) {
-                callback.onFailure("Server酱 configuration is invalid");
-            }
-            return;
-        }
-        
-        new SendTestMessageTask(config, callback).execute();
+        sendTestMessage(config, (SendCallback) callback);
     }
-    
-    /**
-     * AsyncTask for sending verification code messages to Server酱
-     */
-    private static class SendMessageTask extends AsyncTask<Void, Void, String> {
-        private final ServerChanConfig config;
-        private final String verificationCode;
-        private final String smsContent;
-        private final String sender;
-        private final ServerChanSendCallback callback;
-        
-        public SendMessageTask(ServerChanConfig config, String verificationCode, String smsContent, String sender, ServerChanSendCallback callback) {
-            this.config = config;
-            this.verificationCode = verificationCode;
-            this.smsContent = smsContent;
-            this.sender = sender;
-            this.callback = callback;
+
+    // Abstract method implementations
+
+    @Override
+    protected ServerChanConfig loadConfig() {
+        return settingsManager.loadServerChanConfig();
+    }
+
+    @Override
+    protected String getServiceName() {
+        return "Server酱";
+    }
+
+    @Override
+    protected String sendVerificationMessage(ServerChanConfig config, String verificationCode, String smsContent, String sender) {
+        try {
+            // Create message title and content
+            String title = "SMS验证码 - " + verificationCode;
+            String content = createVerificationMessageContent(verificationCode, smsContent, sender);
+
+            // Send message to Server酱
+            return sendToServerChan(config.getApiUrl(), title, content);
+
+        } catch (Exception e) {
+            String error = "Failed to send verification message to Server酱: " + e.getMessage();
+            Log.e("ServerChanSender", error, e);
+            return error;
         }
-        
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                // Create message title and content
-                String title = "SMS验证码 - " + verificationCode;
-                String content = createVerificationMessageContent(verificationCode, smsContent, sender);
-                
-                // Send message to Server酱
-                return sendToServerChan(config.getApiUrl(), title, content);
-                
-            } catch (Exception e) {
-                String error = "Failed to send verification message to Server酱: " + e.getMessage();
-                Log.e(TAG, error, e);
-                return error;
-            }
-        }
-        
-        @Override
-        protected void onPostExecute(String error) {
-            if (callback != null) {
-                if (error == null) {
-                    callback.onSuccess();
-                } else {
-                    callback.onFailure(error);
-                }
-            }
+    }
+
+    @Override
+    protected String sendTestMessage(ServerChanConfig config) {
+        try {
+            String title = "SMS Forward - 测试消息";
+            String content = "这是来自 SMS Forward 应用的测试消息。\n\n" +
+                    "如果您收到此消息，说明您的 Server酱 配置正常工作。\n\n" +
+                    "发送时间: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+
+            return sendToServerChan(config.getApiUrl(), title, content);
+
+        } catch (Exception e) {
+            String error = "Failed to send test message to Server酱: " + e.getMessage();
+            Log.e("ServerChanSender", error, e);
+            return error;
         }
     }
     
-    /**
-     * AsyncTask for sending test messages to Server酱
-     */
-    private static class SendTestMessageTask extends AsyncTask<Void, Void, String> {
-        private final ServerChanConfig config;
-        private final ServerChanSendCallback callback;
-        
-        public SendTestMessageTask(ServerChanConfig config, ServerChanSendCallback callback) {
-            this.config = config;
-            this.callback = callback;
-        }
-        
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                String title = "SMS Forward - 测试消息";
-                String content = "这是来自 SMS Forward 应用的测试消息。\n\n" +
-                        "如果您收到此消息，说明您的 Server酱 配置正常工作。\n\n" +
-                        "发送时间: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
-                
-                return sendToServerChan(config.getApiUrl(), title, content);
-                
-            } catch (Exception e) {
-                String error = "Failed to send test message to Server酱: " + e.getMessage();
-                Log.e(TAG, error, e);
-                return error;
-            }
-        }
-        
-        @Override
-        protected void onPostExecute(String error) {
-            if (callback != null) {
-                if (error == null) {
-                    callback.onSuccess();
-                } else {
-                    callback.onFailure(error);
-                }
-            }
-        }
-    }
+
     
     /**
      * Create formatted message content for verification codes
@@ -211,8 +136,8 @@ public class ServerChanSender {
             
             // Read response
             int responseCode = connection.getResponseCode();
-            Log.d(TAG, "Server酱 API response code: " + responseCode);
-            
+            Log.d("ServerChanSender", "Server酱 API response code: " + responseCode);
+
             StringBuilder response = new StringBuilder();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                     responseCode >= 200 && responseCode < 300 ? connection.getInputStream() : connection.getErrorStream(), "UTF-8"))) {
@@ -221,11 +146,11 @@ public class ServerChanSender {
                     response.append(line);
                 }
             }
-            
-            Log.d(TAG, "Server酱 API response: " + response.toString());
-            
+
+            Log.d("ServerChanSender", "Server酱 API response: " + response.toString());
+
             if (responseCode >= 200 && responseCode < 300) {
-                Log.d(TAG, "Message sent to Server酱 successfully");
+                Log.d("ServerChanSender", "Message sent to Server酱 successfully");
                 return null; // Success
             } else {
                 return "Server酱 API error (HTTP " + responseCode + "): " + response.toString();

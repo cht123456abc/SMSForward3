@@ -19,75 +19,58 @@ import androidx.core.view.WindowInsetsCompat;
 /**
  * Activity for configuring email settings
  */
-public class EmailConfigActivity extends AppCompatActivity {
-    private static final String TAG = "EmailConfigActivity";
-    
-    private SwitchCompat emailEnabledSwitch;
-    private View configFormLayout;
-    private View actionButtonsCard;
+public class EmailConfigActivity extends BaseConfigActivity<EmailConfig, EmailSender> {
+
     private EditText senderEmailEditText;
     private EditText senderPasswordEditText;
     private EditText recipientEmailEditText;
-    private Button testEmailButton;
-    private Button saveConfigButton;
-    private Button backButton;
     
-    private EmailSettingsManager settingsManager;
-    private EmailSender emailSender;
-    private boolean isLoadingConfiguration = false;
-    
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    // Abstract method implementations
 
-        EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_email_config);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-        
-        // Initialize managers
-        settingsManager = new EmailSettingsManager(this);
-        emailSender = new EmailSender(this);
-        
-        // Initialize UI components
-        initializeUI();
-        
-        // Load existing configuration
-        loadEmailConfiguration();
-        
-        // Set up event listeners
-        setupEventListeners();
+    @Override
+    protected int getLayoutResourceId() {
+        return R.layout.activity_email_config;
+    }
+
+    @Override
+    protected int getEnabledSwitchId() {
+        return R.id.emailEnabledSwitch;
+    }
+
+    @Override
+    protected int getTestButtonId() {
+        return R.id.testEmailButton;
+    }
+
+    @Override
+    protected EmailSender createMessageSender() {
+        return new EmailSender(this);
+    }
+
+    @Override
+    protected EmailConfig loadConfig() {
+        return settingsManager.loadEmailConfig();
+    }
+
+    @Override
+    protected boolean saveConfig(EmailConfig config) {
+        return settingsManager.saveEmailConfig(config);
+    }
+
+    @Override
+    protected boolean setEnabled(boolean enabled) {
+        return settingsManager.setEmailEnabled(enabled);
     }
     
-    /**
-     * Initialize UI components
-     */
-    private void initializeUI() {
-        emailEnabledSwitch = findViewById(R.id.emailEnabledSwitch);
-        configFormLayout = findViewById(R.id.configFormLayout);
-        actionButtonsCard = findViewById(R.id.actionButtonsCard);
+    @Override
+    protected void initializeSpecificUI() {
         senderEmailEditText = findViewById(R.id.senderEmailEditText);
         senderPasswordEditText = findViewById(R.id.senderPasswordEditText);
         recipientEmailEditText = findViewById(R.id.recipientEmailEditText);
-        testEmailButton = findViewById(R.id.testEmailButton);
-        saveConfigButton = findViewById(R.id.saveConfigButton);
-        backButton = findViewById(R.id.backButton);
     }
     
-    /**
-     * Load existing email configuration
-     */
-    private void loadEmailConfiguration() {
-        isLoadingConfiguration = true;
-
-        EmailConfig config = settingsManager.loadEmailConfig();
-        Log.d(TAG, "Loading email configuration: enabled=" + config.isEnabled());
-
-        emailEnabledSwitch.setChecked(config.isEnabled());
-
+    @Override
+    protected void populateForm(EmailConfig config) {
         if (!TextUtils.isEmpty(config.getSenderEmail())) {
             senderEmailEditText.setText(config.getSenderEmail());
         }
@@ -99,143 +82,65 @@ public class EmailConfigActivity extends AppCompatActivity {
         if (!TextUtils.isEmpty(config.getRecipientEmail())) {
             recipientEmailEditText.setText(config.getRecipientEmail());
         }
-
-        updateFormVisibility();
-
-        isLoadingConfiguration = false;
-    }
-    
-    /**
-     * Set up event listeners
-     */
-    private void setupEventListeners() {
-        emailEnabledSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Log.d(TAG, "Email enabled switch changed to: " + isChecked);
-            updateFormVisibility();
-            // 立即保存开关状态
-            saveToggleState(isChecked);
-        });
-
-        testEmailButton.setOnClickListener(v -> testEmailConfiguration());
-        saveConfigButton.setOnClickListener(v -> saveEmailConfiguration());
-        backButton.setOnClickListener(v -> finish());
-    }
-    
-    /**
-     * Update form visibility based on enabled switch
-     */
-    private void updateFormVisibility() {
-        boolean enabled = emailEnabledSwitch.isChecked();
-        configFormLayout.setVisibility(enabled ? View.VISIBLE : View.GONE);
-        // 匹配Server酱页面的行为：只有在启用时才显示操作按钮
-        actionButtonsCard.setVisibility(enabled ? View.VISIBLE : View.GONE);
     }
 
-    /**
-     * 立即保存开关状态（当用户手动切换开关时）
-     */
-    private void saveToggleState(boolean enabled) {
-        // 如果正在加载配置，不要触发保存操作
-        if (isLoadingConfiguration) {
-            Log.d(TAG, "Skipping toggle state save during configuration loading");
-            return;
-        }
-
-        Log.d(TAG, "Saving toggle state immediately: " + enabled);
-
-        // 使用EmailSettingsManager的setEmailEnabled方法直接保存开关状态
-        boolean success = settingsManager.setEmailEnabled(enabled);
-
-        if (success) {
-            Log.d(TAG, "Toggle state saved successfully: " + enabled);
-            // 显示简短的状态提示
-            String message = enabled ? "邮件转发已开启" : "邮件转发已关闭";
-            showToast(message);
-        } else {
-            Log.e(TAG, "Failed to save toggle state: " + enabled);
-            showToast("保存状态失败");
-        }
-    }
-
-    /**
-     * Test email configuration
-     */
-    private void testEmailConfiguration() {
-        EmailConfig config = getEmailConfigFromForm();
-        
-        if (!config.isValid()) {
-            showToast(getString(R.string.toast_fill_email_fields));
-            return;
-        }
-
-        showToast(getString(R.string.toast_testing_email));
-        testEmailButton.setEnabled(false);
-        
-        emailSender.sendTestEmail(config, new EmailSender.EmailSendCallback() {
-            @Override
-            public void onSuccess() {
-                runOnUiThread(() -> {
-                    testEmailButton.setEnabled(true);
-                    showToast(getString(R.string.toast_test_email_success));
-                    Log.d(TAG, "Test email sent successfully");
-                });
-            }
-            
-            @Override
-            public void onFailure(String error) {
-                runOnUiThread(() -> {
-                    testEmailButton.setEnabled(true);
-                    showDetailedErrorDialog(error);
-                    Log.e(TAG, "Test email failed: " + error);
-                });
-            }
-        });
-    }
-    
-    /**
-     * Save email configuration
-     */
-    private void saveEmailConfiguration() {
-        EmailConfig config;
-
-        if (emailEnabledSwitch.isChecked()) {
-            // When enabled, get config from form and validate
-            config = getEmailConfigFromForm();
-
-            if (!config.isValid()) {
-                showToast(getString(R.string.toast_fill_email_fields));
-                return;
-            }
-        } else {
-            // When disabled, preserve existing form data but set enabled = false
-            config = getEmailConfigFromForm();
-            config.setEnabled(false);
-        }
-
-        boolean success = settingsManager.saveEmailConfig(config);
-
-        if (success) {
-            showToast(getString(R.string.toast_config_saved));
-            Log.d(TAG, "Email configuration saved with enabled state: " + config.isEnabled());
-            // 不再自动返回页面，只显示成功提示
-        } else {
-            showToast(getString(R.string.toast_config_save_failed));
-            Log.e(TAG, "Failed to save email configuration");
-        }
-    }
-    
-
-    
-    /**
-     * Get email configuration from form inputs
-     */
-    private EmailConfig getEmailConfigFromForm() {
+    @Override
+    protected EmailConfig getConfigFromForm() {
         String senderEmail = senderEmailEditText.getText().toString().trim();
         String senderPassword = senderPasswordEditText.getText().toString().trim();
         String recipientEmail = recipientEmailEditText.getText().toString().trim();
-        boolean enabled = emailEnabledSwitch.isChecked();
-        
+        boolean enabled = enabledSwitch.isChecked();
+
         return new EmailConfig(senderEmail, senderPassword, recipientEmail, enabled);
+    }
+    
+    // Message implementations
+
+    @Override
+    protected String getEnabledMessage() {
+        return "邮件转发已开启";
+    }
+
+    @Override
+    protected String getDisabledMessage() {
+        return "邮件转发已关闭";
+    }
+
+    @Override
+    protected String getInvalidConfigMessage() {
+        return getString(R.string.toast_fill_email_fields);
+    }
+
+    @Override
+    protected String getTestingMessage() {
+        return getString(R.string.toast_testing_email);
+    }
+
+    @Override
+    protected String getTestSuccessMessage() {
+        return getString(R.string.toast_test_email_success);
+    }
+
+    @Override
+    protected String getSaveSuccessMessage() {
+        return getString(R.string.toast_config_saved);
+    }
+
+    @Override
+    protected String getSaveFailureMessage() {
+        return getString(R.string.toast_config_save_failed);
+    }
+
+    @Override
+    protected String getErrorDialogTitle() {
+        return "Email Send Failed";
+    }
+
+    // Email-specific network diagnostics functionality
+
+    private void testEmailConfiguration() {
+        // Delegate to base class but add network diagnostics on failure
+        super.testConfiguration();
     }
     
     /**
@@ -294,10 +199,5 @@ public class EmailConfigActivity extends AppCompatActivity {
         builder.show();
     }
 
-    /**
-     * Show toast message
-     */
-    private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
+
 }

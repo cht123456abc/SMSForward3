@@ -5,7 +5,7 @@ import android.text.TextUtils;
 /**
  * Data model for Server酱 configuration settings
  */
-public class ServerChanConfig {
+public class ServerChanConfig implements ForwardingConfig {
     private String sendKey;
     private boolean enabled;
     

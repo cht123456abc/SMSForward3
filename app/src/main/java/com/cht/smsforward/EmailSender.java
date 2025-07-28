@@ -22,11 +22,7 @@ import javax.mail.internet.MimeMessage;
 /**
  * Email sender utility for sending verification codes via QQ Mail SMTP
  */
-public class EmailSender {
-    private static final String TAG = "EmailSender";
-
-    private Context context;
-    private EmailSettingsManager settingsManager;
+public class EmailSender extends MessageSender<EmailConfig> {
 
     // 协议偏好跟踪（用于优化重试顺序）
     private static final String PREF_PROTOCOL_SUCCESS = "email_protocol_success";
@@ -35,90 +31,56 @@ public class EmailSender {
     private android.content.SharedPreferences protocolPrefs;
 
     public EmailSender(Context context) {
-        this.context = context.getApplicationContext();
-        this.settingsManager = new EmailSettingsManager(context);
+        super(context, "EmailSender");
         this.protocolPrefs = context.getSharedPreferences(PREF_PROTOCOL_SUCCESS, Context.MODE_PRIVATE);
     }
-    
+
     /**
-     * Interface for email sending callbacks
+     * Interface for email sending callbacks (for backward compatibility)
      */
-    public interface EmailSendCallback {
-        void onSuccess();
-        void onFailure(String error);
+    public interface EmailSendCallback extends SendCallback {
     }
     
     /**
-     * Send verification code email asynchronously
+     * Send verification code email asynchronously (backward compatibility wrapper)
      */
     public void sendVerificationCodeEmail(String verificationCode, String smsContent, String sender, EmailSendCallback callback) {
-        try {
-            EmailConfig config = settingsManager.loadEmailConfig();
-
-            if (!config.isValid() || !config.isEnabled()) {
-                String error = "Email configuration is invalid or disabled";
-                Log.w(TAG, error + " - Config: " + config.toString());
-                if (callback != null) {
-                    callback.onFailure(error);
-                }
-                return;
-            }
-
-            Log.d(TAG, "Sending verification code email - Code: " + verificationCode + ", Sender: " + sender);
-            new SendEmailTask(config, verificationCode, smsContent, sender, callback, protocolPrefs).execute();
-        } catch (Exception e) {
-            String error = "Failed to initiate email sending: " + e.getMessage();
-            Log.e(TAG, error, e);
-            if (callback != null) {
-                callback.onFailure(error);
-            }
-        }
+        sendVerificationCodeMessage(verificationCode, smsContent, sender, callback);
     }
-    
+
     /**
-     * Test email connection and send a test email
+     * Test email connection and send a test email (backward compatibility wrapper)
      */
     public void sendTestEmail(EmailConfig config, EmailSendCallback callback) {
-        if (!config.isValid()) {
-            Log.e(TAG, "Email configuration is invalid for testing");
-            if (callback != null) {
-                callback.onFailure("Email configuration is invalid");
-            }
-            return;
-        }
-        
-        new SendTestEmailTask(config, callback, protocolPrefs).execute();
+        sendTestMessage(config, callback);
+    }
+
+    // Abstract method implementations
+
+    @Override
+    protected EmailConfig loadConfig() {
+        return settingsManager.loadEmailConfig();
+    }
+
+    @Override
+    protected String getServiceName() {
+        return "Email";
+    }
+
+    @Override
+    protected String sendVerificationMessage(EmailConfig config, String verificationCode, String smsContent, String sender) {
+        return sendVerificationEmailWithRetry(config, verificationCode, smsContent, sender);
+    }
+
+    @Override
+    protected String sendTestMessage(EmailConfig config) {
+        return sendTestEmailWithRetry(config);
     }
     
     /**
-     * AsyncTask for sending verification code emails
+     * Send verification email with optimized retry mechanism
      */
-    private static class SendEmailTask extends AsyncTask<Void, Void, String> {
-        private EmailConfig config;
-        private String verificationCode;
-        private String smsContent;
-        private String sender;
-        private EmailSendCallback callback;
-        private android.content.SharedPreferences protocolPrefs;
-
-        public SendEmailTask(EmailConfig config, String verificationCode, String smsContent, String sender, EmailSendCallback callback, android.content.SharedPreferences protocolPrefs) {
-            this.config = config;
-            this.verificationCode = verificationCode;
-            this.smsContent = smsContent;
-            this.sender = sender;
-            this.callback = callback;
-            this.protocolPrefs = protocolPrefs;
-        }
-        
-        @Override
-        protected String doInBackground(Void... voids) {
-            return sendVerificationEmailWithRetry();
-        }
-
-        /**
-         * Send verification email with optimized retry mechanism
-         */
-        private String sendVerificationEmailWithRetry() {
+    private String sendVerificationEmailWithRetry(EmailConfig config, String verificationCode, String smsContent, String sender) {
             String lastError = null;
 
             // 优化：根据历史成功记录选择首选协议
@@ -126,7 +88,7 @@ public class EmailSender {
 
             if (preferSSL) {
                 // 先尝试SSL（如果历史记录显示SSL更可靠）
-                lastError = attemptVerificationEmailSend(true);
+                lastError = attemptVerificationEmailSend(config, verificationCode, smsContent, sender, true);
                 if (lastError == null) {
                     recordSuccessfulProtocol(true, protocolPrefs);
                     return null; // Success
@@ -135,14 +97,14 @@ public class EmailSender {
                 Log.w(TAG, "SSL attempt failed, trying TLS: " + lastError);
 
                 // SSL失败，尝试TLS
-                lastError = attemptVerificationEmailSend(false);
+                lastError = attemptVerificationEmailSend(config, verificationCode, smsContent, sender, false);
                 if (lastError == null) {
                     recordSuccessfulProtocol(false, protocolPrefs);
                     return null; // Success
                 }
             } else {
                 // 先尝试TLS（默认）
-                lastError = attemptVerificationEmailSend(false);
+                lastError = attemptVerificationEmailSend(config, verificationCode, smsContent, sender, false);
                 if (lastError == null) {
                     recordSuccessfulProtocol(false, protocolPrefs);
                     return null; // Success
@@ -151,7 +113,7 @@ public class EmailSender {
                 Log.w(TAG, "TLS attempt failed, trying SSL: " + lastError);
 
                 // TLS失败，尝试SSL
-                lastError = attemptVerificationEmailSend(true);
+                lastError = attemptVerificationEmailSend(config, verificationCode, smsContent, sender, true);
                 if (lastError == null) {
                     recordSuccessfulProtocol(true, protocolPrefs);
                     return null; // Success
@@ -162,10 +124,10 @@ public class EmailSender {
             return formatErrorMessage(lastError);
         }
 
-        /**
-         * Attempt to send verification email with specific configuration
-         */
-        private String attemptVerificationEmailSend(boolean useSSL) {
+    /**
+     * Attempt to send verification email with specific configuration
+     */
+    private String attemptVerificationEmailSend(EmailConfig config, String verificationCode, String smsContent, String sender, boolean useSSL) {
             try {
                 Log.d(TAG, "Attempting verification email send with " + (useSSL ? "SSL" : "TLS"));
 
@@ -200,42 +162,11 @@ public class EmailSender {
                 return error;
             }
         }
-        
-        @Override
-        protected void onPostExecute(String error) {
-            if (callback != null) {
-                if (error == null) {
-                    callback.onSuccess();
-                } else {
-                    callback.onFailure(error);
-                }
-            }
-        }
-    }
     
     /**
-     * AsyncTask for sending test emails
+     * Send test email with retry mechanism
      */
-    private static class SendTestEmailTask extends AsyncTask<Void, Void, String> {
-        private EmailConfig config;
-        private EmailSendCallback callback;
-        private android.content.SharedPreferences protocolPrefs;
-
-        public SendTestEmailTask(EmailConfig config, EmailSendCallback callback, android.content.SharedPreferences protocolPrefs) {
-            this.config = config;
-            this.callback = callback;
-            this.protocolPrefs = protocolPrefs;
-        }
-        
-        @Override
-        protected String doInBackground(Void... voids) {
-            return sendTestEmailWithRetry();
-        }
-
-        /**
-         * Send test email with retry mechanism
-         */
-        private String sendTestEmailWithRetry() {
+    private String sendTestEmailWithRetry(EmailConfig config) {
             String lastError = null;
 
             // 优化：根据历史成功记录选择首选协议
@@ -243,7 +174,7 @@ public class EmailSender {
 
             if (preferSSL) {
                 // 先尝试SSL（如果历史记录显示SSL更可靠）
-                lastError = attemptTestEmailSend(true);
+                lastError = attemptTestEmailSend(config, true);
                 if (lastError == null) {
                     recordSuccessfulProtocol(true, protocolPrefs);
                     return null; // Success
@@ -252,14 +183,14 @@ public class EmailSender {
                 Log.w(TAG, "SSL attempt failed, trying TLS: " + lastError);
 
                 // SSL失败，尝试TLS
-                lastError = attemptTestEmailSend(false);
+                lastError = attemptTestEmailSend(config, false);
                 if (lastError == null) {
                     recordSuccessfulProtocol(false, protocolPrefs);
                     return null; // Success
                 }
             } else {
                 // 先尝试TLS（默认）
-                lastError = attemptTestEmailSend(false);
+                lastError = attemptTestEmailSend(config, false);
                 if (lastError == null) {
                     recordSuccessfulProtocol(false, protocolPrefs);
                     return null; // Success
@@ -268,7 +199,7 @@ public class EmailSender {
                 Log.w(TAG, "TLS attempt failed, trying SSL: " + lastError);
 
                 // TLS失败，尝试SSL
-                lastError = attemptTestEmailSend(true);
+                lastError = attemptTestEmailSend(config, true);
                 if (lastError == null) {
                     recordSuccessfulProtocol(true, protocolPrefs);
                     return null; // Success
@@ -279,10 +210,10 @@ public class EmailSender {
             return formatErrorMessage(lastError);
         }
 
-        /**
-         * Attempt to send test email with specific configuration
-         */
-        private String attemptTestEmailSend(boolean useSSL) {
+    /**
+     * Attempt to send test email with specific configuration
+     */
+    private String attemptTestEmailSend(EmailConfig config, boolean useSSL) {
             try {
                 Log.d(TAG, "Attempting test email send with " + (useSSL ? "SSL" : "TLS"));
 
@@ -316,18 +247,6 @@ public class EmailSender {
                 return error;
             }
         }
-        
-        @Override
-        protected void onPostExecute(String error) {
-            if (callback != null) {
-                if (error == null) {
-                    callback.onSuccess();
-                } else {
-                    callback.onFailure(error);
-                }
-            }
-        }
-    }
     
 
 
@@ -404,7 +323,7 @@ public class EmailSender {
         props.put("mail.smtp.sendpartial", "true"); // 允许部分发送
         props.put("mail.smtp.quitwait", "false"); // 不等待QUIT命令响应
 
-        Log.d(TAG, "Creating email session with " + (useSSL ? "SSL" : "TLS") + " configuration");
+        Log.d("EmailSender", "Creating email session with " + (useSSL ? "SSL" : "TLS") + " configuration");
 
         return Session.getInstance(props, new Authenticator() {
             @Override
@@ -450,6 +369,6 @@ public class EmailSender {
         int currentCount = prefs.getInt(key, 0);
         prefs.edit().putInt(key, currentCount + 1).apply();
 
-        Log.d(TAG, "Recorded successful " + (useSSL ? "SSL" : "TLS") + " connection");
+        Log.d("EmailSender", "Recorded successful " + (useSSL ? "SSL" : "TLS") + " connection");
     }
 }

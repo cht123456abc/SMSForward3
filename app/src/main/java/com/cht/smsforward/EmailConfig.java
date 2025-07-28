@@ -3,7 +3,7 @@ package com.cht.smsforward;
 /**
  * Data model for email configuration settings
  */
-public class EmailConfig {
+public class EmailConfig implements ForwardingConfig {
     private String senderEmail;
     private String senderPassword;
     private String recipientEmail;

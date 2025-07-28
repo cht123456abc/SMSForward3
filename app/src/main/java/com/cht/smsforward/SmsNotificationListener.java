@@ -329,124 +329,10 @@ public class SmsNotificationListener extends NotificationListenerService {
             // 立即广播UI更新（现在数据库已经有数据了）
             broadcastSmsContent(content, sender, verificationCodes, primaryCode, packageName, timestamp);
 
-            // 异步处理邮件发送以避免阻塞
+            // 异步处理转发以避免阻塞
             if (primaryCode != null) {
-                new Thread(() -> {
-                    try {
-                        Log.d(TAG, "Attempting to send verification code email: " + primaryCode);
-
-                        // Check if email is enabled before setting sending status
-                        EmailConfig emailConfig = new EmailSettingsManager(this).loadEmailConfig();
-                        if (!emailConfig.isEnabled() || !emailConfig.isValid()) {
-                            Log.d(TAG, "Email forwarding is disabled or invalid, skipping email send");
-                            // Set status to disabled instead of failed when service is not enabled
-                            smsMessage.setEmailFailed("disabled");
-                            smsDataManager.updateSmsMessage(smsMessage);
-                            // 不广播状态更新，避免显示错误提醒
-                            return;
-                        }
-
-                        // Only set sending status if email is actually enabled and valid
-                        smsMessage.setEmailSending();
-                        smsDataManager.updateSmsMessage(smsMessage);
-
-                        // 广播状态更新给UI (发送中状态)
-                        broadcastStatusUpdate(smsMessage);
-
-                        emailSender.sendVerificationCodeEmail(
-                            primaryCode,
-                            content,
-                            sender,
-                            new EmailSender.EmailSendCallback() {
-                                @Override
-                                public void onSuccess() {
-                                    Log.d(TAG, "Verification code email sent successfully");
-                                    smsMessage.setEmailSent();
-                                    smsDataManager.updateSmsMessage(smsMessage);
-
-                                    // 广播状态更新给UI
-                                    broadcastStatusUpdate(smsMessage);
-                                }
-
-                                @Override
-                                public void onFailure(String error) {
-                                    Log.e(TAG, "Failed to send verification code email: " + error);
-                                    smsMessage.setEmailFailed(error);
-                                    smsDataManager.updateSmsMessage(smsMessage);
-
-                                    // 广播状态更新给UI
-                                    broadcastStatusUpdate(smsMessage);
-                                }
-                            }
-                        );
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error sending email", e);
-                        smsMessage.setEmailFailed(e.getMessage());
-                        smsDataManager.updateSmsMessage(smsMessage);
-
-                        // 广播状态更新给UI
-                        broadcastStatusUpdate(smsMessage);
-                    }
-                }, "Email-Sending-" + System.currentTimeMillis()).start();
-
-                // 异步处理Server酱发送以避免阻塞
-                new Thread(() -> {
-                    try {
-                        Log.d(TAG, "Attempting to send verification code to Server酱: " + primaryCode);
-
-                        // Check if Server酱 is enabled before setting sending status
-                        ServerChanConfig serverChanConfig = new ServerChanSettingsManager(this).loadServerChanConfig();
-                        if (!serverChanConfig.isEnabled() || !serverChanConfig.isValid()) {
-                            Log.d(TAG, "Server酱 forwarding is disabled or invalid, skipping Server酱 send");
-                            // Set status to disabled instead of failed when service is not enabled
-                            smsMessage.setServerChanFailed("disabled");
-                            smsDataManager.updateSmsMessage(smsMessage);
-                            // 不广播状态更新，避免显示错误提醒
-                            return;
-                        }
-
-                        // Only set sending status if Server酱 is actually enabled and valid
-                        smsMessage.setServerChanSending();
-                        smsDataManager.updateSmsMessage(smsMessage);
-
-                        // 广播状态更新给UI (发送中状态)
-                        broadcastStatusUpdate(smsMessage);
-
-                        serverChanSender.sendVerificationCodeMessage(
-                            primaryCode,
-                            content,
-                            sender,
-                            new ServerChanSender.ServerChanSendCallback() {
-                                @Override
-                                public void onSuccess() {
-                                    Log.d(TAG, "Verification code sent to Server酱 successfully");
-                                    smsMessage.setServerChanSent();
-                                    smsDataManager.updateSmsMessage(smsMessage);
-
-                                    // 广播状态更新给UI
-                                    broadcastStatusUpdate(smsMessage);
-                                }
-
-                                @Override
-                                public void onFailure(String error) {
-                                    Log.e(TAG, "Failed to send verification code to Server酱: " + error);
-                                    smsMessage.setServerChanFailed(error);
-                                    smsDataManager.updateSmsMessage(smsMessage);
-
-                                    // 广播状态更新给UI
-                                    broadcastStatusUpdate(smsMessage);
-                                }
-                            }
-                        );
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error sending to Server酱", e);
-                        smsMessage.setServerChanFailed(e.getMessage());
-                        smsDataManager.updateSmsMessage(smsMessage);
-
-                        // 广播状态更新给UI
-                        broadcastStatusUpdate(smsMessage);
-                    }
-                }, "ServerChan-Sending-" + System.currentTimeMillis()).start();
+                // 统一的转发处理
+                forwardVerificationCode(smsMessage, primaryCode, content, sender);
             }
 
         } catch (Exception e) {
@@ -458,5 +344,115 @@ public class SmsNotificationListener extends NotificationListenerService {
         }
     }
 
+    /**
+     * 统一的验证码转发处理方法
+     * 消除邮件和Server酱发送逻辑的重复代码
+     */
+    private void forwardVerificationCode(SmsMessage smsMessage, String primaryCode, String content, String sender) {
+        UnifiedSettingsManager settingsManager = new UnifiedSettingsManager(this);
 
+        // 邮件转发
+        new Thread(() -> {
+            forwardToEmailService(smsMessage, primaryCode, content, sender, settingsManager.loadEmailConfig());
+        }, "Email-Sending-" + System.currentTimeMillis()).start();
+
+        // Server酱转发
+        new Thread(() -> {
+            forwardToServerChanService(smsMessage, primaryCode, content, sender, settingsManager.loadServerChanConfig());
+        }, "ServerChan-Sending-" + System.currentTimeMillis()).start();
+    }
+
+    /**
+     * 邮件转发处理方法
+     */
+    private void forwardToEmailService(SmsMessage smsMessage, String primaryCode, String content, String sender, EmailConfig config) {
+        try {
+            Log.d(TAG, "Attempting to send verification code via Email: " + primaryCode);
+
+            // 检查邮件服务是否启用
+            if (!config.isEnabled() || !config.isValid()) {
+                Log.d(TAG, "Email forwarding is disabled or invalid, skipping send");
+                smsMessage.setEmailFailed("disabled");
+                smsDataManager.updateSmsMessage(smsMessage);
+                return;
+            }
+
+            // 设置发送中状态
+            smsMessage.setEmailSending();
+            smsDataManager.updateSmsMessage(smsMessage);
+            broadcastStatusUpdate(smsMessage);
+
+            // 执行邮件发送
+            emailSender.sendVerificationCodeEmail(primaryCode, content, sender, new EmailSender.EmailSendCallback() {
+                @Override
+                public void onSuccess() {
+                    Log.d(TAG, "Verification code email sent successfully");
+                    smsMessage.setEmailSent();
+                    smsDataManager.updateSmsMessage(smsMessage);
+                    broadcastStatusUpdate(smsMessage);
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    Log.e(TAG, "Failed to send verification code email: " + error);
+                    smsMessage.setEmailFailed(error);
+                    smsDataManager.updateSmsMessage(smsMessage);
+                    broadcastStatusUpdate(smsMessage);
+                }
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending email", e);
+            smsMessage.setEmailFailed(e.getMessage());
+            smsDataManager.updateSmsMessage(smsMessage);
+            broadcastStatusUpdate(smsMessage);
+        }
+    }
+
+    /**
+     * Server酱转发处理方法
+     */
+    private void forwardToServerChanService(SmsMessage smsMessage, String primaryCode, String content, String sender, ServerChanConfig config) {
+        try {
+            Log.d(TAG, "Attempting to send verification code via Server酱: " + primaryCode);
+
+            // 检查Server酱服务是否启用
+            if (!config.isEnabled() || !config.isValid()) {
+                Log.d(TAG, "Server酱 forwarding is disabled or invalid, skipping send");
+                smsMessage.setServerChanFailed("disabled");
+                smsDataManager.updateSmsMessage(smsMessage);
+                return;
+            }
+
+            // 设置发送中状态
+            smsMessage.setServerChanSending();
+            smsDataManager.updateSmsMessage(smsMessage);
+            broadcastStatusUpdate(smsMessage);
+
+            // 执行Server酱发送
+            serverChanSender.sendVerificationCodeMessage(primaryCode, content, sender, new ServerChanSender.ServerChanSendCallback() {
+                @Override
+                public void onSuccess() {
+                    Log.d(TAG, "Verification code sent to Server酱 successfully");
+                    smsMessage.setServerChanSent();
+                    smsDataManager.updateSmsMessage(smsMessage);
+                    broadcastStatusUpdate(smsMessage);
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    Log.e(TAG, "Failed to send verification code to Server酱: " + error);
+                    smsMessage.setServerChanFailed(error);
+                    smsDataManager.updateSmsMessage(smsMessage);
+                    broadcastStatusUpdate(smsMessage);
+                }
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error sending to Server酱", e);
+            smsMessage.setServerChanFailed(e.getMessage());
+            smsDataManager.updateSmsMessage(smsMessage);
+            broadcastStatusUpdate(smsMessage);
+        }
+    }
 }

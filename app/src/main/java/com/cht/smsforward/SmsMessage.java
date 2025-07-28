@@ -33,19 +33,7 @@ public class SmsMessage implements Serializable {
     private transient ForwardStatus serverChanStatus;
     private transient String serverChanError;
 
-    // Legacy fields for backward compatibility (deprecated)
-    @Deprecated
-    private EmailForwardStatus legacyEmailStatus;
-    @Deprecated
-    private ServerChanForwardStatus legacyServerChanStatus;
-    @Deprecated
-    private ForwardStatus emailForwardStatus;
-    @Deprecated
-    private String emailForwardError;
-    @Deprecated
-    private ForwardStatus serverChanForwardStatus;
-    @Deprecated
-    private String serverChanForwardError;
+
 
     /**
      * Default constructor for Gson deserialization
@@ -77,60 +65,7 @@ public class SmsMessage implements Serializable {
         this.highlightedContent = VerificationCodeExtractor.createHighlightedText(content);
     }
 
-    /**
-     * Constructor with email forward status (for loading from storage - backward compatibility)
-     */
-    public SmsMessage(String content, String sender, String packageName, long timestamp,
-                     List<String> verificationCodes, String primaryVerificationCode,
-                     EmailForwardStatus emailForwardStatus, String emailForwardError) {
-        this.content = content;
-        this.sender = sender;
-        this.packageName = packageName;
-        this.timestamp = timestamp;
-        this.verificationCodes = verificationCodes;
-        this.primaryVerificationCode = primaryVerificationCode;
 
-        // Convert legacy status and initialize unified status
-        this.emailStatus = convertLegacyEmailStatus(emailForwardStatus);
-        this.emailError = emailForwardError;
-        this.serverChanStatus = hasVerificationCodes() ? ForwardStatus.NOT_SENT : ForwardStatus.DISABLED;
-        this.serverChanError = null;
-
-        // Calculate unified status
-        this.forwardStatus = calculateUnifiedStatus();
-        this.forwardError = calculateUnifiedError();
-
-        // Create highlighted content
-        this.highlightedContent = VerificationCodeExtractor.createHighlightedText(content);
-    }
-
-    /**
-     * Constructor with both email and Server酱 forward status (for loading from storage - backward compatibility)
-     */
-    public SmsMessage(String content, String sender, String packageName, long timestamp,
-                     List<String> verificationCodes, String primaryVerificationCode,
-                     EmailForwardStatus emailForwardStatus, String emailForwardError,
-                     ServerChanForwardStatus serverChanForwardStatus, String serverChanForwardError) {
-        this.content = content;
-        this.sender = sender;
-        this.packageName = packageName;
-        this.timestamp = timestamp;
-        this.verificationCodes = verificationCodes;
-        this.primaryVerificationCode = primaryVerificationCode;
-
-        // Convert legacy statuses and initialize internal tracking
-        this.emailStatus = convertLegacyEmailStatus(emailForwardStatus);
-        this.emailError = emailForwardError;
-        this.serverChanStatus = convertLegacyServerChanStatus(serverChanForwardStatus);
-        this.serverChanError = serverChanForwardError;
-
-        // Calculate unified status
-        this.forwardStatus = calculateUnifiedStatus();
-        this.forwardError = calculateUnifiedError();
-
-        // Create highlighted content
-        this.highlightedContent = VerificationCodeExtractor.createHighlightedText(content);
-    }
 
     /**
      * Constructor with unified forward status (new preferred constructor)
@@ -216,35 +151,7 @@ public class SmsMessage implements Serializable {
         return forwardError;
     }
 
-    // Legacy methods for backward compatibility
-    @Deprecated
-    public ForwardStatus getEmailForwardStatus() {
-        return forwardStatus; // Return unified status for backward compatibility
-    }
 
-    @Deprecated
-    public void setEmailForwardStatus(ForwardStatus emailForwardStatus) {
-        // For backward compatibility, update internal email status and recalculate unified status
-        this.emailStatus = emailForwardStatus;
-        updateUnifiedStatus();
-    }
-
-    @Deprecated
-    public void setEmailForwardStatus(EmailForwardStatus emailForwardStatus) {
-        this.emailStatus = convertLegacyEmailStatus(emailForwardStatus);
-        updateUnifiedStatus();
-    }
-
-    @Deprecated
-    public String getEmailForwardError() {
-        return forwardError; // Return unified error for backward compatibility
-    }
-
-    @Deprecated
-    public void setEmailForwardError(String emailForwardError) {
-        this.emailError = emailForwardError;
-        updateUnifiedStatus();
-    }
 
     /**
      * Update email forward status to sending
@@ -273,34 +180,7 @@ public class SmsMessage implements Serializable {
         updateUnifiedStatus();
     }
 
-    // Legacy Server酱 methods for backward compatibility
-    @Deprecated
-    public ForwardStatus getServerChanForwardStatus() {
-        return forwardStatus; // Return unified status for backward compatibility
-    }
 
-    @Deprecated
-    public void setServerChanForwardStatus(ForwardStatus serverChanForwardStatus) {
-        this.serverChanStatus = serverChanForwardStatus;
-        updateUnifiedStatus();
-    }
-
-    @Deprecated
-    public void setServerChanForwardStatus(ServerChanForwardStatus serverChanForwardStatus) {
-        this.serverChanStatus = convertLegacyServerChanStatus(serverChanForwardStatus);
-        updateUnifiedStatus();
-    }
-
-    @Deprecated
-    public String getServerChanForwardError() {
-        return forwardError; // Return unified error for backward compatibility
-    }
-
-    @Deprecated
-    public void setServerChanForwardError(String serverChanForwardError) {
-        this.serverChanError = serverChanForwardError;
-        updateUnifiedStatus();
-    }
 
     /**
      * Update Server酱 forward status to sending
@@ -395,41 +275,7 @@ public class SmsMessage implements Serializable {
         return errorBuilder.length() > 0 ? errorBuilder.toString() : null;
     }
 
-    /**
-     * Convert legacy EmailForwardStatus to unified ForwardStatus
-     */
-    private ForwardStatus convertLegacyEmailStatus(EmailForwardStatus legacyStatus) {
-        if (legacyStatus == null) {
-            return hasVerificationCodes() ? ForwardStatus.NOT_SENT : ForwardStatus.DISABLED;
-        }
 
-        switch (legacyStatus) {
-            case NOT_SENT: return ForwardStatus.NOT_SENT;
-            case SENDING: return ForwardStatus.SENDING;
-            case SUCCESS: return ForwardStatus.SUCCESS;
-            case FAILED: return ForwardStatus.FAILED;
-            case DISABLED: return ForwardStatus.DISABLED;
-            default: return ForwardStatus.NOT_SENT;
-        }
-    }
-
-    /**
-     * Convert legacy ServerChanForwardStatus to unified ForwardStatus
-     */
-    private ForwardStatus convertLegacyServerChanStatus(ServerChanForwardStatus legacyStatus) {
-        if (legacyStatus == null) {
-            return hasVerificationCodes() ? ForwardStatus.NOT_SENT : ForwardStatus.DISABLED;
-        }
-
-        switch (legacyStatus) {
-            case NOT_SENT: return ForwardStatus.NOT_SENT;
-            case SENDING: return ForwardStatus.SENDING;
-            case SUCCESS: return ForwardStatus.SUCCESS;
-            case FAILED: return ForwardStatus.FAILED;
-            case DISABLED: return ForwardStatus.DISABLED;
-            default: return ForwardStatus.NOT_SENT;
-        }
-    }
 
     @Override
     public String toString() {

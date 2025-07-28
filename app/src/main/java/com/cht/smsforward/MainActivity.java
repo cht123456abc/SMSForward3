@@ -44,8 +44,7 @@ public class MainActivity extends AppCompatActivity {
     private SmsAdapter smsAdapter;
     private SmsBroadcastReceiver smsBroadcastReceiver;
     private SmsDataManager smsDataManager;
-    private EmailSettingsManager emailSettingsManager;
-    private ServerChanSettingsManager serverChanSettingsManager;
+    private UnifiedSettingsManager settingsManager;
     private Handler uiRefreshHandler;
     private Runnable uiRefreshRunnable;
 
@@ -66,11 +65,8 @@ public class MainActivity extends AppCompatActivity {
         // Initialize data manager
         smsDataManager = new SmsDataManager(this);
 
-        // Initialize email settings manager
-        emailSettingsManager = new EmailSettingsManager(this);
-
-        // Initialize Server酱 settings manager
-        serverChanSettingsManager = new ServerChanSettingsManager(this);
+        // Initialize unified settings manager
+        settingsManager = new UnifiedSettingsManager(this);
 
         // Initialize UI components
         initializeUI();
@@ -261,21 +257,25 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Notification access enabled: " + notificationEnabled);
 
         // Check email forwarding status
-        EmailConfig emailConfig = emailSettingsManager.loadEmailConfig();
+        EmailConfig emailConfig = settingsManager.loadEmailConfig();
         boolean emailEnabled = emailConfig.isEnabled();
         boolean emailValid = emailConfig.isValid();
         Log.d(TAG, "Email forwarding enabled: " + emailEnabled + ", valid: " + emailValid);
 
         // Check Server酱 forwarding status
-        ServerChanConfig serverChanConfig = serverChanSettingsManager.loadServerChanConfig();
+        ServerChanConfig serverChanConfig = settingsManager.loadServerChanConfig();
         boolean serverChanEnabled = serverChanConfig.isEnabled();
         boolean serverChanValid = serverChanConfig.isValid();
         Log.d(TAG, "Server酱 forwarding enabled: " + serverChanEnabled + ", valid: " + serverChanValid);
 
         // Update UI for all statuses
         updateNotificationStatus(notificationEnabled);
-        updateEmailForwardingStatus(emailEnabled, emailValid);
-        updateServerChanForwardingStatus(serverChanEnabled, serverChanValid);
+        updateForwardingStatus(emailStatusText, emailEnabled, emailValid,
+                              getString(R.string.email_forwarding_enabled),
+                              getString(R.string.email_forwarding_disabled), "Email");
+        updateForwardingStatus(serverChanStatusText, serverChanEnabled, serverChanValid,
+                              getString(R.string.serverchan_forwarding_enabled),
+                              getString(R.string.serverchan_forwarding_disabled), "Server酱");
 
         // Update empty state and permission button visibility
         updateEmptyState();
@@ -298,32 +298,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Update email forwarding status display
+     * 通用的转发状态更新方法
+     * 消除邮件和Server酱状态更新的重复代码
      */
-    private void updateEmailForwardingStatus(boolean enabled, boolean valid) {
+    private void updateForwardingStatus(TextView statusText, boolean enabled, boolean valid,
+                                       String enabledMessage, String disabledMessage, String serviceName) {
         if (enabled && valid) {
-            emailStatusText.setText(getString(R.string.email_forwarding_enabled));
-            emailStatusText.setTextColor(getResources().getColor(R.color.success_green));
-            Log.d(TAG, "Email forwarding status: enabled and ready");
+            statusText.setText(enabledMessage);
+            statusText.setTextColor(getResources().getColor(R.color.success_green));
+            Log.d(TAG, serviceName + " forwarding status: enabled and ready");
         } else {
-            emailStatusText.setText(getString(R.string.email_forwarding_disabled));
-            emailStatusText.setTextColor(getResources().getColor(R.color.error_red));
-            Log.d(TAG, "Email forwarding status: disabled or invalid");
-        }
-    }
-
-    /**
-     * Update Server酱 forwarding status display
-     */
-    private void updateServerChanForwardingStatus(boolean enabled, boolean valid) {
-        if (enabled && valid) {
-            serverChanStatusText.setText(getString(R.string.serverchan_forwarding_enabled));
-            serverChanStatusText.setTextColor(getResources().getColor(R.color.success_green));
-            Log.d(TAG, "Server酱 forwarding status: enabled and ready");
-        } else {
-            serverChanStatusText.setText(getString(R.string.serverchan_forwarding_disabled));
-            serverChanStatusText.setTextColor(getResources().getColor(R.color.error_red));
-            Log.d(TAG, "Server酱 forwarding status: disabled or invalid");
+            statusText.setText(disabledMessage);
+            statusText.setTextColor(getResources().getColor(R.color.error_red));
+            Log.d(TAG, serviceName + " forwarding status: disabled or invalid");
         }
     }
 
